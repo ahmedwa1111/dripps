@@ -2,9 +2,11 @@ import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import { ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingBag } from 'lucide-react';
 import { Product } from '@/types';
 import { cn, formatCurrency } from '@/lib/utils';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { toast } from 'sonner';
 
 interface ProductSliderProps {
   products: Product[];
@@ -23,6 +25,8 @@ export function ProductSlider({
 }: ProductSliderProps) {
   const navigate = useNavigate();
   const [scrollProgress, setScrollProgress] = React.useState(0);
+  const [animatingId, setAnimatingId] = React.useState<string | null>(null);
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   const autoplayPlugin = React.useMemo(
     () =>
@@ -105,7 +109,7 @@ export function ProductSlider({
                     key={product.id}
                     className="flex-[0_0_50%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333%] xl:flex-[0_0_25%] pl-4 min-w-0"
                   >
-                    <div className="group/card relative overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:shadow-drip-lg hover:-translate-y-1 h-full flex flex-col">
+                    <div className="group/card relative overflow-hidden rounded-2xl glass-card h-full flex flex-col">
                       {/* Image Container */}
                       <Link
                         to={`/product/${product.slug}`}
@@ -122,21 +126,46 @@ export function ProductSlider({
                         {/* Badges */}
                         <div className="absolute top-3 left-3 flex flex-col gap-2">
                           {isOnSale && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-destructive text-destructive-foreground shadow-md">
+                            <span className="drip-badge border-red-200 bg-red-50 text-red-700">
                               -{discount}%
                             </span>
                           )}
                           {product.is_featured && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-md">
+                            <span className="drip-badge drip-badge-purple">
                               Featured
                             </span>
                           )}
                           {product.stock <= 5 && product.stock > 0 && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500 text-yellow-950 shadow-md">
+                            <span className="drip-badge drip-badge-yellow">
                               Low Stock
                             </span>
                           )}
                         </div>
+
+                        {/* Favorite Button */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const wasFavorite = isFavorite(product.id);
+                            toggleFavorite(product);
+                            setAnimatingId(product.id);
+                            window.setTimeout(() => setAnimatingId(null), 300);
+                            toast(wasFavorite ? 'Removed from favorites' : 'Added to favorites');
+                          }}
+                          className={cn(
+                            'absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors duration-200',
+                            'hover:border-primary/60 hover:text-primary',
+                            isFavorite(product.id) && 'text-primary bg-primary/10',
+                            animatingId === product.id && 'animate-heart-pop'
+                          )}
+                          aria-pressed={isFavorite(product.id)}
+                          aria-label="Toggle favorite"
+                        >
+                          <Heart
+                            className={cn('h-4 w-4', isFavorite(product.id) ? 'fill-primary' : 'fill-transparent')}
+                          />
+                        </button>
 
                         {/* Quick View Button - navigates to product page for size selection */}
                         <button
@@ -146,9 +175,9 @@ export function ProductSlider({
                           }}
                           disabled={product.stock === 0}
                           className={cn(
-                            'absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg transition-all duration-300',
+                            'absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white transition-all duration-200',
                             'opacity-0 translate-y-2 group-hover/card:opacity-100 group-hover/card:translate-y-0',
-                            'hover:bg-primary hover:text-primary-foreground hover:scale-110',
+                            'hover:bg-yellow-400 hover:text-black',
                             'disabled:opacity-50 disabled:cursor-not-allowed'
                           )}
                           title="Select size"
@@ -182,7 +211,7 @@ export function ProductSlider({
 
                         {/* Price */}
                         <div className="flex items-center gap-2 mt-auto">
-                          <span className="font-display font-bold text-lg text-primary">
+                          <span className="font-display font-bold text-lg text-foreground">
                             {formatCurrency(product.price)}
                           </span>
                           {isOnSale && (
@@ -202,7 +231,7 @@ export function ProductSlider({
 
         {/* Progress Bar */}
         <div className="mt-6 mx-auto max-w-xs">
-          <div className="h-1 bg-muted-foreground/20 rounded-full overflow-hidden">
+          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-primary rounded-full transition-all duration-150 ease-out"
               style={{ width: `${scrollProgress}%` }}

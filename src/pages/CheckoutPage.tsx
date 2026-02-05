@@ -7,27 +7,31 @@ import { useCreateOrder } from '@/hooks/useOrders';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Lock, CreditCard, Check } from 'lucide-react';
 import { Address } from '@/types';
 import { toast } from 'sonner';
-import { formatCurrency, FAST_SHIPPING_THRESHOLD, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD } from '@/lib/utils';
+import { formatCurrency, getFreeShippingThreshold, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD, MAX_SHIPPING_COST } from '@/lib/utils';
 import type { CartItem } from '@/types';
 
-function getShippingCost(items: CartItem[], subtotal: number): { cost: number; isDoubled: boolean } {
-  if (subtotal >= FAST_SHIPPING_THRESHOLD) return { cost: 0, isDoubled: false };
+function getShippingCost(
+  items: CartItem[],
+  subtotal: number,
+  freeShippingThreshold: number
+): { cost: number; isDoubled: boolean } {
+  if (subtotal >= freeShippingThreshold) return { cost: 0, isDoubled: false };
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const base = items.reduce(
     (sum, item) => sum + item.quantity * (item.product.shipping_price ?? SHIPPING_COST),
     0
   );
   const isDoubled = itemCount > SHIPPING_DOUBLE_ITEMS_THRESHOLD;
-  return { cost: isDoubled ? base * 2 : base, isDoubled };
+  const computed = isDoubled ? base * 2 : base;
+  return { cost: Math.min(computed, MAX_SHIPPING_COST), isDoubled };
 }
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal } = useCart();
   const { user } = useAuth();
   const createOrder = useCreateOrder();
 
@@ -45,27 +49,29 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     zip: '',
-    country: 'US',
+    country: 'EG',
     phone: '',
   });
 
-  const [sameAsBilling, setSameAsBilling] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cod'>('card');
 
-  const { cost: shippingCost, isDoubled: shippingIsDoubled } = getShippingCost(items, subtotal);
+  const freeShippingThreshold = getFreeShippingThreshold();
+  const { cost: shippingCost, isDoubled: shippingIsDoubled } = getShippingCost(
+    items,
+    subtotal,
+    freeShippingThreshold
+  );
   const total = subtotal + shippingCost;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (items.length === 0) {
       toast.error('Your cart is empty');
       return;
     }
 
-    // Basic validation
     if (!customerInfo.email || !shippingAddress.address1 || !shippingAddress.city) {
       toast.error('Please fill in all required fields');
       return;
@@ -74,77 +80,69 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
+      // 1) Create order in your system first
       const created = await createOrder.mutateAsync({
         shippingAddress: {
           ...shippingAddress,
           firstName: shippingAddress.firstName || customerInfo.firstName,
           lastName: shippingAddress.lastName || customerInfo.lastName,
+          country: 'EG',
         },
         customerEmail: customerInfo.email,
         customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
       });
 
+      // لازم يكون ده order id من قاعدة بياناتك
       const merchantOrderId =
-        created?.id ??
-        created?.order?.id ??
-        created?.data?.id ??
+        (created as any)?.id ||
+        (created as any)?.order?.id ||
+        (created as any)?.data?.id ||
         `ORDER_${Date.now()}`;
+
+      // 2) Amount in cents (EGP)
       const amountCents = Math.round(total * 100);
 
-      if (paymentMethod === 'cod') {
-        setOrderComplete(true);
-        clearCart();
-        return;
-      }
-
-      const billingData = {
-        first_name: customerInfo.firstName || shippingAddress.firstName || 'NA',
-        last_name: customerInfo.lastName || shippingAddress.lastName || 'NA',
-        email: customerInfo.email,
-        phone_number: shippingAddress.phone || 'NA',
-        apartment: shippingAddress.address2 || 'NA',
-        floor: 'NA',
-        street: shippingAddress.address1 || 'NA',
-        building: 'NA',
-        shipping_method: 'PKG',
-        postal_code: shippingAddress.zip || 'NA',
-        city: shippingAddress.city || 'NA',
-        country: shippingAddress.country || 'EG',
-        state: shippingAddress.state || 'NA',
-      };
-
-      const itemsPayload = items.map((item) => ({
-        name: item.product.name,
-        amount_cents: Math.round(item.product.price * 100),
-        description: item.product.description || item.product.name,
-        quantity: item.quantity,
-      }));
-
-      const response = await fetch('/api/paymob/create-payment', {
+      // 3) Ask server to create paymob payment + return iframeUrl
+      const resp = await fetch('/api/paymob/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountCents,
           merchantOrderId,
-          billingData,
-          items: itemsPayload,
+          billingData: {
+            first_name: customerInfo.firstName || shippingAddress.firstName || 'Customer',
+            last_name: customerInfo.lastName || shippingAddress.lastName || 'Name',
+            email: customerInfo.email,
+            phone_number: shippingAddress.phone || '01000000000',
+            city: shippingAddress.city || 'Cairo',
+            state: shippingAddress.state || 'Cairo',
+            street: shippingAddress.address1 || 'NA',
+            postal_code: shippingAddress.zip || 'NA',
+            country: 'EG',
+          },
+          items: items.map((i) => ({
+            name: i.product.name,
+            amount_cents: String(Math.round(i.product.price * 100)),
+            description: i.product.description || i.product.name,
+            quantity: i.quantity,
+          })),
+          returnUrl: `${window.location.origin}/payment-result`,
         }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to create Paymob payment');
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        console.error('Paymob create-payment error:', data);
+        toast.error(data?.error || 'Payment setup failed');
+        return;
       }
 
-      const data = (await response.json()) as { iframeUrl?: string };
-      if (!data.iframeUrl) {
-        throw new Error('Missing Paymob iframe URL');
-      }
-
+      // 4) Redirect to Paymob iframe
       window.location.href = data.iframeUrl;
     } catch (error) {
-      console.error('Order failed:', error);
-      toast.error('Unable to start Paymob payment. Please try again.');
+      console.error('Checkout failed:', error);
+      toast.error('Checkout failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -290,62 +288,38 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="phone">Phone (optional)</Label>
+                    <Label htmlFor="phone">Phone (recommended)</Label>
                     <Input
                       id="phone"
                       type="tel"
                       value={shippingAddress.phone}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, phone: e.target.value })}
+                      placeholder="010xxxxxxxx"
                     />
                   </div>
                 </div>
               </section>
 
-              {/* Payment Note */}
+              {/* Payment */}
               <section className="bg-card rounded-xl border border-border p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <CreditCard className="h-5 w-5 text-primary" />
                   <h2 className="font-display text-xl font-bold">Payment</h2>
                 </div>
-                <div className="grid gap-4 mb-4">
-                  <label className="flex items-center gap-3 rounded-lg border border-border p-4 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="card"
-                      checked={paymentMethod === 'card'}
-                      onChange={() => setPaymentMethod('card')}
-                    />
-                    <span className="text-sm font-medium">Pay with Card (Visa/Mastercard)</span>
-                  </label>
-                  <label className="flex items-center gap-3 rounded-lg border border-border p-4 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="cod"
-                      checked={paymentMethod === 'cod'}
-                      onChange={() => setPaymentMethod('cod')}
-                    />
-                    <span className="text-sm font-medium">Cash on Delivery</span>
-                  </label>
-                </div>
                 <div className="bg-muted rounded-lg p-4 flex items-start gap-3">
                   <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <p className="text-sm text-muted-foreground">
-                    {paymentMethod === 'card'
-                      ? 'You will be redirected to Paymob to complete your payment securely.'
-                      : 'You will pay cash on delivery.'}
+                    You will be redirected to Paymob to complete your payment securely.
                   </p>
                 </div>
               </section>
             </div>
 
-            {/* Order Summary */}
+            {/* Summary */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 bg-card rounded-xl border border-border p-6 space-y-6">
                 <h2 className="font-display text-xl font-bold">Order Summary</h2>
 
-                {/* Items */}
                 <div className="space-y-4 max-h-64 overflow-y-auto">
                   {items.map((item) => (
                     <div key={item.product.id} className="flex gap-3">
@@ -398,18 +372,8 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  variant="hero"
-                  size="lg"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting
-                    ? 'Processing...'
-                    : paymentMethod === 'card'
-                      ? 'Pay with Card'
-                      : 'Place Order (COD)'}
+                <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Redirecting...' : 'Pay with Card'}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">

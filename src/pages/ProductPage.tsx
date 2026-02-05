@@ -8,7 +8,9 @@ import { ProductGrid } from '@/components/product/ProductGrid';
 import { Minus, Plus, ShoppingBag, Heart, ArrowLeft, Truck, RotateCcw, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, getFreeShippingThreshold } from '@/lib/utils';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { toast } from 'sonner';
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -16,12 +18,15 @@ export default function ProductPage() {
   const { data: relatedProducts = [] } = useProducts({
     categorySlug: product?.category?.slug,
   });
-  const { data: sizes = [], isLoading: sizesLoading } = useProductSizes(product?.id);
+  const { data: sizes = [] } = useProductSizes(product?.id);
   const { addItem } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const freeShippingThreshold = getFreeShippingThreshold();
+  const freeShippingLabel = freeShippingThreshold.toLocaleString('en-US');
 
-  // Available sizes (enabled) – normalize stock to number for comparisons
+  // Available sizes (enabled) - normalize stock to number for comparisons
   const availableSizes = sizes
     .filter((s) => s.is_enabled)
     .map((s) => ({ ...s, stock: Number(s.stock) }));
@@ -97,7 +102,7 @@ export default function ProductPage() {
     : (product?.stock ?? 0) > 0;
 
   const filteredRelated = relatedProducts
-    .filter(p => p.id !== product.id)
+    .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
   return (
@@ -124,7 +129,7 @@ export default function ProductPage() {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Image */}
           <div className="relative">
-            <div className="aspect-square overflow-hidden rounded-2xl bg-muted">
+            <div className="aspect-square overflow-hidden rounded-2xl bg-white border border-gray-200">
               <img
                 src={product.image_url || '/placeholder.svg'}
                 alt={product.name}
@@ -174,25 +179,27 @@ export default function ProductPage() {
               {product.description}
             </p>
 
-            {/* Size Selection – shown when product has sizes */}
+            {/* Size Selection - shown when product has sizes */}
             {hasSizes ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-medium">Size</span>
                   {selectedSizeData && (
-                    <span className={cn(
-                      "text-xs",
-                      selectedSizeData.stock === 0 
-                        ? "text-red-500" 
-                        : selectedSizeData.stock <= 5 
-                        ? "text-yellow-600" 
-                        : "text-green-600"
-                    )}>
-                      {selectedSizeData.stock === 0 
-                        ? "Out of stock" 
-                        : selectedSizeData.stock <= 5 
-                        ? `Only ${selectedSizeData.stock} left` 
-                        : "In stock"}
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide',
+                        selectedSizeData.stock === 0
+                          ? 'border-red-200 bg-red-50 text-red-700'
+                          : selectedSizeData.stock <= 5
+                          ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
+                          : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      )}
+                    >
+                      {selectedSizeData.stock === 0
+                        ? 'Out of stock'
+                        : selectedSizeData.stock <= 5
+                        ? `Only ${selectedSizeData.stock} left`
+                        : 'In stock'}
                     </span>
                   )}
                 </div>
@@ -212,10 +219,10 @@ export default function ProductPage() {
                         className={cn(
                           'h-12 min-w-[3rem] px-4 rounded-lg border-2 font-medium transition-all',
                           isSelected
-                            ? 'border-primary bg-primary text-primary-foreground'
+                            ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30'
                             : isOutOfStock
-                              ? 'border-muted bg-muted text-muted-foreground cursor-not-allowed line-through'
-                              : 'border-border bg-background hover:border-primary/50'
+                            ? 'border-gray-200 bg-gray-100 text-muted-foreground cursor-not-allowed line-through'
+                            : 'border-gray-200 bg-white hover:border-primary/40 hover:text-primary'
                         )}
                       >
                         {sizeItem.size}
@@ -231,18 +238,18 @@ export default function ProductPage() {
                   {product.stock > 0
                     ? product.stock <= 5
                       ? `Only ${product.stock} left`
-                      : "In stock"
-                    : "Out of stock"}
+                      : 'In stock'
+                    : 'Out of stock'}
                 </p>
               </div>
             )}
 
             {/* Quantity & Add to Cart */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center border border-border rounded-lg">
+              <div className="flex items-center border border-gray-200 rounded-lg bg-white">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-3 hover:bg-muted transition-colors"
+                  className="p-3 hover:bg-gray-50 transition-colors"
                   disabled={quantity <= 1 || !canAddToCart}
                 >
                   <Minus className="h-4 w-4" />
@@ -250,7 +257,7 @@ export default function ProductPage() {
                 <span className="w-12 text-center font-medium">{quantity}</span>
                 <button
                   onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
-                  className="p-3 hover:bg-muted transition-colors"
+                  className="p-3 hover:bg-gray-50 transition-colors"
                   disabled={quantity >= maxQuantity || !canAddToCart}
                 >
                   <Plus className="h-4 w-4" />
@@ -266,31 +273,43 @@ export default function ProductPage() {
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
                 {hasSizes && !selectedSize
-                  ? "Select Size"
+                  ? 'Select Size'
                   : canAddToCart
-                  ? "Add to Cart"
-                  : "Out of Stock"}
+                  ? 'Add to Cart'
+                  : 'Out of Stock'}
               </Button>
 
-              <Button variant="outline" size="lg">
-                <Heart className="h-5 w-5" />
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  const wasFavorite = isFavorite(product.id);
+                  toggleFavorite(product);
+                  toast(wasFavorite ? 'Removed from favorites' : 'Added to favorites');
+                }}
+                className={cn(
+                  'transition-all',
+                  isFavorite(product.id) && 'text-primary border-primary/60 bg-primary/5'
+                )}
+              >
+                <Heart className={cn('h-5 w-5', isFavorite(product.id) ? 'fill-primary' : 'fill-transparent')} />
               </Button>
             </div>
 
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-border">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                  <Truck className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200">
+                  <Truck className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Fast Shipping</p>
-                  <p className="text-xs text-muted-foreground">On orders 3,000 L.E.+</p>
+                  <p className="text-sm font-medium">Free Shipping</p>
+                  <p className="text-xs text-muted-foreground">On orders over {freeShippingLabel} L.E.</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                  <RotateCcw className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200">
+                  <RotateCcw className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Easy Returns</p>
@@ -298,8 +317,8 @@ export default function ProductPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                  <Shield className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200">
+                  <Shield className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Secure</p>

@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import logo from '@/assets/logo.png';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -49,7 +50,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen bg-muted">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -61,7 +62,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-300 lg:translate-x-0 lg:static',
+          'fixed inset-y-0 left-0 z-50 w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transform transition-transform duration-300 lg:translate-x-0 lg:static',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -69,11 +70,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
             <Link to="/admin" className="flex items-center gap-2">
-              <span className="font-display text-xl font-bold">
-                <span className="text-sidebar-primary">Drip</span>
-                <span className="text-secondary">pss</span>
-              </span>
-              <span className="text-xs bg-sidebar-accent text-sidebar-accent-foreground px-2 py-0.5 rounded">
+              <img src={logo} alt="DRIPPSS" className="h-8 w-auto" />
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
                 Admin
               </span>
             </Link>

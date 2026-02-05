@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
+  darkMode: "class",
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Sora', 'sans-serif'],
         display: ['Space Grotesk', 'sans-serif'],
       },
       colors: {
@@ -61,17 +61,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Drippss custom colors
-        drip: {
-          purple: "hsl(var(--drip-purple))",
-          "purple-light": "hsl(var(--drip-purple-light))",
-          "purple-dark": "hsl(var(--drip-purple-dark))",
-          yellow: "hsl(var(--drip-yellow))",
-          "yellow-light": "hsl(var(--drip-yellow-light))",
-          "yellow-dark": "hsl(var(--drip-yellow-dark))",
-          black: "hsl(var(--drip-black))",
-          gray: "hsl(var(--drip-gray))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -109,13 +98,6 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "fade-up": "fade-up 0.5s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
-      },
-      boxShadow: {
-        "drip-sm": "var(--shadow-sm)",
-        "drip-md": "var(--shadow-md)",
-        "drip-lg": "var(--shadow-lg)",
-        "drip-purple": "var(--shadow-purple)",
-        "drip-yellow": "var(--shadow-yellow)",
       },
     },
   },

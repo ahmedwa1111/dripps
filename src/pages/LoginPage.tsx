@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import logo from '@/assets/logo.png';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -68,10 +69,7 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block mb-6">
-              <span className="font-display text-3xl font-bold tracking-tight">
-                <span className="text-primary">Drip</span>
-                <span className="text-secondary">pss</span>
-              </span>
+              <img src={logo} alt="DRIPPSS" className="h-10 w-auto mx-auto" />
             </Link>
             <h1 className="font-display text-2xl font-bold">
               {isLogin ? 'Welcome Back' : 'Create Account'}
@@ -84,7 +82,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6">
             {!isLogin && (
               <div>
                 <Label htmlFor="fullName">Full Name</Label>
@@ -118,7 +116,7 @@ export default function LoginPage() {
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="••••••••"
+                placeholder="********"
                 required
               />
             </div>
@@ -131,7 +129,7 @@ export default function LoginPage() {
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="••••••••"
+                  placeholder="********"
                   required={!isLogin}
                 />
               </div>

@@ -2,11 +2,16 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
 import { useDashboardStats, useRecentOrders, useOrdersByStatus, useRevenueByMonth } from '@/hooks/useDashboard';
 import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getFreeShippingThreshold, setFreeShippingThreshold } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { OrderStatus } from '@/types';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   BarChart,
   Bar,
@@ -35,6 +40,23 @@ export default function AdminDashboardPage() {
   const { data: recentOrders = [], isLoading: loadingOrders } = useRecentOrders(5);
   const { data: ordersByStatus = [] } = useOrdersByStatus();
   const { data: revenueByMonth = [] } = useRevenueByMonth();
+  const [freeShippingInput, setFreeShippingInput] = useState(
+    () => String(getFreeShippingThreshold())
+  );
+  const [currentFreeShipping, setCurrentFreeShipping] = useState(
+    () => getFreeShippingThreshold()
+  );
+
+  const handleSaveFreeShipping = () => {
+    const value = Number(freeShippingInput);
+    if (!Number.isFinite(value) || value < 0) {
+      toast.error('Enter a valid free shipping amount.');
+      return;
+    }
+    setFreeShippingThreshold(value);
+    setCurrentFreeShipping(value);
+    toast.success('Free shipping limit updated.');
+  };
 
   return (
     <AdminLayout>
@@ -67,6 +89,41 @@ export default function AdminDashboardPage() {
             icon={Users}
             iconColor="text-blue-600"
           />
+        </div>
+
+        {/* Shipping Settings */}
+        <div className="bg-card rounded-xl border border-border p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="font-display text-lg font-semibold">Shipping Settings</h3>
+              <p className="text-sm text-muted-foreground">
+                Control the free shipping limit shown across the store.
+              </p>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Current free shipping:{" "}
+              <span className="font-medium text-foreground">
+                {currentFreeShipping.toLocaleString('en-US')} L.E.
+              </span>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="free-shipping-threshold">Free shipping threshold (L.E.)</Label>
+              <Input
+                id="free-shipping-threshold"
+                type="number"
+                min={0}
+                step={1}
+                value={freeShippingInput}
+                onChange={(event) => setFreeShippingInput(event.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+            <Button type="button" onClick={handleSaveFreeShipping}>
+              Save
+            </Button>
+          </div>
         </div>
 
         {/* Charts */}

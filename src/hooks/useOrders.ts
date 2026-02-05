@@ -4,6 +4,7 @@ import { Order, OrderStatus, Address } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { getFreeShippingThreshold, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD, MAX_SHIPPING_COST } from '@/lib/utils';
 
 // Helper to parse address from JSON
 const parseAddress = (json: unknown): Address | null => {
@@ -106,7 +107,16 @@ export function useCreateOrder() {
       notes?: string;
     }) => {
       const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-      const shippingCost = subtotal >= 100 ? 0 : 9.99;
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      const freeShippingThreshold = getFreeShippingThreshold();
+      const baseShipping = items.reduce(
+        (sum, item) => sum + item.quantity * (item.product.shipping_price ?? SHIPPING_COST),
+        0
+      );
+      const isDoubled = itemCount > SHIPPING_DOUBLE_ITEMS_THRESHOLD;
+      const computed = isDoubled ? baseShipping * 2 : baseShipping;
+      const shippingCost =
+        subtotal >= freeShippingThreshold ? 0 : Math.min(computed, MAX_SHIPPING_COST);
       const total = subtotal + shippingCost;
 
       // Create order
@@ -164,10 +174,14 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: OrderStatus }) => {
+    mutationFn: async ({ id, status, notes }: { id: string; status: OrderStatus; notes?: string | null }) => {
+      const updatePayload: { status: OrderStatus; notes?: string | null } = { status };
+      if (notes !== undefined) {
+        updatePayload.notes = notes;
+      }
       const { data, error } = await supabase
         .from('orders')
-        .update({ status })
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();

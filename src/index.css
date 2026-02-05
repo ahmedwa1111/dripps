@@ -1,225 +1,121 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Drippss Design System - Modern, Clean, Playful
-   Primary: White
-   Accents: Purple, Yellow
-*/
-
 @layer base {
   :root {
-    /* Core brand colors */
     --background: 0 0% 100%;
-    --foreground: 250 20% 10%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 250 20% 10%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 250 20% 10%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Purple accent - main brand accent */
-    --primary: 259 94% 66%;
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
 
-    /* Yellow accent - secondary highlight */
-    --secondary: 48 96% 53%;
-    --secondary-foreground: 250 20% 10%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 250 10% 96%;
-    --muted-foreground: 250 10% 45%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
 
-    /* Purple accent for interactive elements */
-    --accent: 271 81% 96%;
-    --accent-foreground: 271 81% 40%;
+    --muted: 210 20% 98%;
+    --muted-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 250 10% 90%;
-    --input: 250 10% 90%;
-    --ring: 271 81% 56%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    /* Custom Drippss tokens */
-    --drip-purple: 271 81% 56%;
-    --drip-purple-light: 271 81% 70%;
-    --drip-purple-dark: 271 81% 40%;
-    --drip-yellow: 48 96% 53%;
-    --drip-yellow-light: 48 96% 70%;
-    --drip-yellow-dark: 48 96% 40%;
-    --drip-black: 250 20% 10%;
-    --drip-gray: 250 10% 96%;
-
-    /* Gradients */
-    --gradient-purple: linear-gradient(135deg, hsl(271 81% 56%) 0%, hsl(271 81% 70%) 100%);
-    --gradient-yellow: linear-gradient(135deg, hsl(48 96% 53%) 0%, hsl(48 96% 65%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(271 81% 56%) 0%, hsl(48 96% 53%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
-
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-    --shadow-purple: 0 10px 40px -10px hsla(271, 81%, 56%, 0.4);
-    --shadow-yellow: 0 10px 40px -10px hsla(48, 96%, 53%, 0.4);
-
-    /* Sidebar */
-    --sidebar-background: 250 20% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 271 81% 56%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 262 83% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 15% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 250 15% 20%;
-    --sidebar-ring: 271 81% 56%;
+    --sidebar-accent: 210 20% 98%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 262 83% 58%;
   }
 
-  .dark {
-    --background: 250 20% 7%;
-    --foreground: 0 0% 98%;
-
-    --card: 250 20% 10%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 250 20% 10%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 271 81% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 48 96% 53%;
-    --secondary-foreground: 250 20% 10%;
-
-    --muted: 250 15% 18%;
-    --muted-foreground: 250 10% 65%;
-
-    --accent: 271 60% 20%;
-    --accent-foreground: 271 81% 80%;
-
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 250 15% 20%;
-    --input: 250 15% 20%;
-    --ring: 271 81% 60%;
-
-    --sidebar-background: 250 20% 5%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 271 81% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 15% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 250 15% 15%;
-    --sidebar-ring: 271 81% 60%;
-  }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: "Sora", sans-serif;
+    min-height: 100%;
+    overflow-x: hidden;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Space Grotesk", sans-serif;
     @apply font-semibold tracking-tight;
   }
 }
 
 @layer components {
-  /* Drippss custom component styles */
-  .drip-card {
-    @apply bg-card rounded-xl border border-border p-6 transition-all duration-300;
-    box-shadow: var(--shadow-md);
+  .glass-card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md;
   }
 
-  .drip-card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
+  .glass-panel {
+    @apply rounded-xl border border-gray-200 bg-white;
+  }
+
+  .drip-card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md;
   }
 
   .drip-badge {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold tracking-wide border border-gray-200 bg-gray-50 text-gray-700;
   }
 
   .drip-badge-purple {
-    @apply bg-primary/10 text-primary;
+    @apply border-purple-200 bg-purple-50 text-purple-700;
   }
 
   .drip-badge-yellow {
-    @apply bg-secondary/20 text-secondary-foreground;
+    @apply border-yellow-200 bg-yellow-50 text-yellow-800;
   }
 
   .drip-gradient-text {
-    background: var(--gradient-hero);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--primary));
   }
 
-  .drip-glass {
-    background: var(--gradient-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-
-  /* Hero section styles */
   .drip-hero-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--secondary) / 0.1) 100%);
+    @apply bg-muted;
   }
 
-  /* Animation utilities */
-  .drip-float {
-    animation: float 6s ease-in-out infinite;
+  .animate-heart-pop {
+    animation: heart-pop 0.35s ease-out;
   }
 
-  .drip-pulse {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { 
-      box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  @keyframes heart-pop {
+    0% {
+      transform: scale(1);
     }
-    50% { 
-      box-shadow: 0 0 40px hsl(var(--primary) / 0.5);
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
     }
   }
-
-  @keyframes slide-up {
-    from { 
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to { 
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-slide-up {
-    animation: slide-up 0.5s ease-out forwards;
-  }
-
-  /* Stagger animations */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
 }
 
 @layer utilities {
@@ -227,7 +123,6 @@
     text-wrap: balance;
   }
 
-  /* Scrollbar styling */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

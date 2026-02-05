@@ -279,7 +279,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
             type="number"
             step="0.01"
             min="0"
-            placeholder="Leave empty to use site default (299 L.E.)"
+            placeholder="Leave empty to use site default (200 L.E.)"
             {...form.register('shipping_price')}
           />
           <p className="text-xs text-muted-foreground">

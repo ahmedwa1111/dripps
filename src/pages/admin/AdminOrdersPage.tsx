@@ -20,6 +20,16 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,6 +40,7 @@ import { MoreHorizontal, Package, Truck, CheckCircle, XCircle, Clock } from 'luc
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { OrderStatus } from '@/types';
+import { toast } from 'sonner';
 
 const statusColors: Record<OrderStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -47,15 +58,96 @@ const statusIcons: Record<OrderStatus, React.ReactNode> = {
   cancelled: <XCircle className="h-4 w-4" />,
 };
 
+const CONFIRMERS_STORAGE_KEY = 'drippss_confirmers';
+const DEFAULT_CONFIRMERS = ['Nour Salah', 'Ahmed Wael'];
+
+const loadConfirmers = (): string[] => {
+  if (typeof window === 'undefined') return DEFAULT_CONFIRMERS;
+  try {
+    const stored = window.localStorage.getItem(CONFIRMERS_STORAGE_KEY);
+    const parsed = stored ? (JSON.parse(stored) as string[]) : [];
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+  } catch {
+    // ignore invalid storage
+  }
+  return DEFAULT_CONFIRMERS;
+};
+
+const saveConfirmers = (list: string[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(CONFIRMERS_STORAGE_KEY, JSON.stringify(list));
+};
+
+const buildConfirmationNote = (existing: string | null, confirmer: string) => {
+  const cleaned = (existing || '')
+    .split('\n')
+    .filter((line) => !line.toLowerCase().startsWith('confirmed by:'))
+    .join('\n')
+    .trim();
+  const note = `Confirmed by: ${confirmer}`;
+  return cleaned ? `${cleaned}\n${note}` : note;
+};
+
+const extractConfirmedBy = (notes: string | null) => {
+  if (!notes) return null;
+  const match = notes.match(/Confirmed by:\s*(.+)$/im);
+  return match ? match[1].trim() : null;
+};
+
 export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const { data: orders = [], isLoading } = useOrders(
     statusFilter !== 'all' ? { status: statusFilter } : undefined
   );
   const updateStatus = useUpdateOrderStatus();
+  const [confirmers, setConfirmers] = useState<string[]>(() => loadConfirmers());
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [selectedConfirmer, setSelectedConfirmer] = useState('');
+  const [newConfirmer, setNewConfirmer] = useState('');
 
   const handleStatusChange = (orderId: string, status: OrderStatus) => {
     updateStatus.mutate({ id: orderId, status });
+  };
+
+  const openProcessingDialog = (orderId: string) => {
+    setProcessingOrderId(orderId);
+    setSelectedConfirmer('');
+    setNewConfirmer('');
+    setConfirmDialogOpen(true);
+  };
+
+  const handleAddConfirmer = () => {
+    const name = newConfirmer.trim();
+    if (!name) {
+      toast.error('Enter a name to add.');
+      return;
+    }
+    const exists = confirmers.some((c) => c.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      toast.error('That person already exists.');
+      return;
+    }
+    const updated = [...confirmers, name];
+    setConfirmers(updated);
+    saveConfirmers(updated);
+    setNewConfirmer('');
+    toast.success('Person added.');
+  };
+
+  const handleConfirmProcessing = () => {
+    if (!processingOrderId) return;
+    if (!selectedConfirmer) {
+      toast.error('Select who confirmed this order.');
+      return;
+    }
+    const order = orders.find((o) => o.id === processingOrderId);
+    const updatedNotes = buildConfirmationNote(order?.notes ?? null, selectedConfirmer);
+    updateStatus.mutate({ id: processingOrderId, status: 'processing', notes: updatedNotes });
+    setConfirmDialogOpen(false);
+    setProcessingOrderId(null);
   };
 
   return (
@@ -136,6 +228,11 @@ export default function AdminOrdersPage() {
                           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </span>
                       </Badge>
+                      {extractConfirmedBy(order.notes) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Confirmed by: {extractConfirmedBy(order.notes)}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(order.created_at), 'MMM d, yyyy')}
@@ -161,7 +258,7 @@ export default function AdminOrdersPage() {
                             Pending
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(order.id, 'processing')}
+                            onClick={() => openProcessingDialog(order.id)}
                             disabled={order.status === 'processing'}
                           >
                             <Package className="mr-2 h-4 w-4" />
@@ -199,6 +296,56 @@ export default function AdminOrdersPage() {
             </TableBody>
           </Table>
         </div>
+
+        <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Processing</DialogTitle>
+              <DialogDescription>
+                Select who confirmed this order before setting it to processing.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="confirmed-by">Confirmed by</Label>
+                <Select value={selectedConfirmer} onValueChange={setSelectedConfirmer}>
+                  <SelectTrigger id="confirmed-by">
+                    <SelectValue placeholder="Select a person" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {confirmers.map((confirmer) => (
+                      <SelectItem key={confirmer} value={confirmer}>
+                        {confirmer}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-confirmer">Add another person</Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Input
+                    id="new-confirmer"
+                    value={newConfirmer}
+                    onChange={(event) => setNewConfirmer(event.target.value)}
+                    placeholder="Enter a name"
+                  />
+                  <Button type="button" variant="outline" onClick={handleAddConfirmer}>
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmProcessing}>
+                Set to Processing
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

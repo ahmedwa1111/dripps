@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Product } from '@/types';
-import { Button } from '@/components/ui/button';
-import { ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingBag } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +13,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, featured = false }: ProductCardProps) {
   const navigate = useNavigate();
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const [animateHeart, setAnimateHeart] = useState(false);
   const isOnSale = product.compare_at_price && product.compare_at_price > product.price;
   const discount = isOnSale
     ? Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)
@@ -19,8 +23,8 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl bg-card transition-all duration-300',
-        featured ? 'drip-card' : 'border border-border hover:shadow-drip-lg hover:-translate-y-1'
+        'group relative overflow-hidden transition-shadow duration-200',
+        featured ? 'drip-card' : 'glass-card'
       )}
     >
       {/* Image */}
@@ -56,6 +60,30 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
         )}
       </div>
 
+      {/* Favorite Button */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const wasFavorite = isFavorite(product.id);
+          toggleFavorite(product);
+          setAnimateHeart(true);
+          window.setTimeout(() => setAnimateHeart(false), 300);
+          toast(wasFavorite ? 'Removed from favorites' : 'Added to favorites');
+        }}
+        className={cn(
+          'absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors duration-200',
+          'hover:border-primary/60 hover:text-primary',
+          isFavorite(product.id) && 'text-primary bg-primary/10',
+          animateHeart && 'animate-heart-pop'
+        )}
+        aria-pressed={isFavorite(product.id)}
+        aria-label="Toggle favorite"
+        title="Favorite"
+      >
+        <Heart className={cn('h-4 w-4', isFavorite(product.id) ? 'fill-primary' : 'fill-transparent')} />
+      </button>
+
       {/* Quick View Button - navigates to product page for size selection */}
       <button
         onClick={(e) => {
@@ -64,9 +92,9 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
         }}
         disabled={product.stock === 0}
         className={cn(
-          'absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-drip-md transition-all duration-300',
+          'absolute top-3 right-14 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white transition-all duration-200',
           'opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0',
-          'hover:bg-primary hover:text-primary-foreground',
+          'hover:bg-yellow-400 hover:text-black',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}
         title="Select size"
