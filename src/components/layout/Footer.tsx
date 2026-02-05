@@ -15,18 +15,6 @@ export function Footer() {
       { href: '/shop?category=leggings', label: 'Leggings' },
       { href: '/shop?category=pants', label: 'Pants' },
     ],
-    company: [
-      { href: '#', label: 'About Us' },
-      { href: '#', label: 'Careers' },
-      { href: '#', label: 'Press' },
-      { href: '#', label: 'Stores' },
-    ],
-    help: [
-      { href: '#', label: 'FAQ' },
-      { href: '#', label: 'Shipping' },
-      { href: '#', label: 'Returns' },
-      { href: '#', label: 'Contact Us' },
-    ],
   };
 
   const handleLogoClick = () => {
@@ -46,7 +34,7 @@ export function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="inline-block" onClick={handleLogoClick}>
@@ -114,39 +102,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Company Links */}
-          <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Company</h4>
-            <ul className="space-y-3">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Help Links */}
-          <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Help</h4>
-            <ul className="space-y-3">
-              {footerLinks.help.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         {/* Bottom Bar */}
