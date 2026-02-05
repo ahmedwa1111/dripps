@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Instagram, Twitter, Facebook, Youtube } from 'lucide-react';
+import { Facebook, Instagram, Music2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getSocialLinks, SocialLinks } from '@/lib/utils';
 import logo from '@/assets/logo.png';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
 
   const footerLinks = {
     shop: [
@@ -30,6 +33,16 @@ export function Footer() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    setSocialLinks(getSocialLinks());
+    const handleUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<SocialLinks>).detail;
+      setSocialLinks(detail ?? getSocialLinks());
+    };
+    window.addEventListener('social-links-updated', handleUpdate);
+    return () => window.removeEventListener('social-links-updated', handleUpdate);
+  }, []);
+
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="container mx-auto px-4 py-12">
@@ -48,18 +61,39 @@ export function Footer() {
               and the confidence to stand out.
             </p>
             <div className="flex items-center gap-4 mt-6">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Youtube className="h-5 w-5" />
-              </a>
+              {socialLinks.instagram && (
+                <a
+                  href={socialLinks.instagram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-5 w-5" />
+                </a>
+              )}
+              {socialLinks.tiktok && (
+                <a
+                  href={socialLinks.tiktok}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="TikTok"
+                >
+                  <Music2 className="h-5 w-5" />
+                </a>
+              )}
+              {socialLinks.facebook && (
+                <a
+                  href={socialLinks.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-5 w-5" />
+                </a>
+              )}
             </div>
           </div>
 

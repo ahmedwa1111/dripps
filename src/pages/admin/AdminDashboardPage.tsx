@@ -2,7 +2,14 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
 import { useDashboardStats, useRecentOrders, useOrdersByStatus, useRevenueByMonth } from '@/hooks/useDashboard';
 import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
-import { formatCurrency, getFreeShippingThreshold, setFreeShippingThreshold } from '@/lib/utils';
+import {
+  formatCurrency,
+  getFreeShippingThreshold,
+  setFreeShippingThreshold,
+  getSocialLinks,
+  setSocialLinks,
+  SocialLinks,
+} from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,6 +53,7 @@ export default function AdminDashboardPage() {
   const [currentFreeShipping, setCurrentFreeShipping] = useState(
     () => getFreeShippingThreshold()
   );
+  const [socialInputs, setSocialInputs] = useState<SocialLinks>(() => getSocialLinks());
 
   const handleSaveFreeShipping = () => {
     const value = Number(freeShippingInput);
@@ -56,6 +64,11 @@ export default function AdminDashboardPage() {
     setFreeShippingThreshold(value);
     setCurrentFreeShipping(value);
     toast.success('Free shipping limit updated.');
+  };
+
+  const handleSaveSocialLinks = () => {
+    setSocialLinks(socialInputs);
+    toast.success('Social links updated.');
   };
 
   return (
@@ -122,6 +135,61 @@ export default function AdminDashboardPage() {
             </div>
             <Button type="button" onClick={handleSaveFreeShipping}>
               Save
+            </Button>
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="bg-card rounded-xl border border-border p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="font-display text-lg font-semibold">Social Links</h3>
+              <p className="text-sm text-muted-foreground">
+                Add your social URLs to show icons in the footer.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="social-instagram">Instagram URL</Label>
+              <Input
+                id="social-instagram"
+                type="url"
+                placeholder="https://instagram.com/yourbrand"
+                value={socialInputs.instagram || ''}
+                onChange={(event) =>
+                  setSocialInputs((prev) => ({ ...prev, instagram: event.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="social-tiktok">TikTok URL</Label>
+              <Input
+                id="social-tiktok"
+                type="url"
+                placeholder="https://tiktok.com/@yourbrand"
+                value={socialInputs.tiktok || ''}
+                onChange={(event) =>
+                  setSocialInputs((prev) => ({ ...prev, tiktok: event.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="social-facebook">Facebook URL</Label>
+              <Input
+                id="social-facebook"
+                type="url"
+                placeholder="https://facebook.com/yourbrand"
+                value={socialInputs.facebook || ''}
+                onChange={(event) =>
+                  setSocialInputs((prev) => ({ ...prev, facebook: event.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button type="button" onClick={handleSaveSocialLinks}>
+              Save Social Links
             </Button>
           </div>
         </div>
