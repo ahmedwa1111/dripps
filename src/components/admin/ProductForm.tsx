@@ -20,6 +20,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts';
 import { useProductSizes, useBulkUpdateProductSizes } from '@/hooks/useProductSizes';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -45,6 +46,8 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be 0 or more'),
   compare_at_price: z.union([z.coerce.number().min(0), z.literal('')]).optional(),
   image_url: z.string().url().optional().or(z.literal('')),
+  images: z.array(z.string()).optional(),
+  colors: z.array(z.string()).optional(),
   category_id: z.string().optional(),
   stock: z.coerce.number().int().min(0, 'Stock must be 0 or more'),
   shipping_price: z.union([z.coerce.number().min(0), z.literal('')]).optional(),
@@ -72,6 +75,10 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
   const [sizeRows, setSizeRows] = useState<SizeRow[]>(() =>
     DEFAULT_SIZES.map((size) => ({ size, stock: 0, is_enabled: true }))
   );
+  const [images, setImages] = useState<string[]>([]);
+  const [imageInput, setImageInput] = useState('');
+  const [colors, setColors] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState('');
   const lastSyncedProductIdRef = useRef<string | null>(null);
 
   const form = useForm<ProductFormValues>({
@@ -83,6 +90,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       price: 0,
       compare_at_price: undefined,
       image_url: '',
+      images: [],
+      colors: [],
       category_id: '',
       stock: 0,
       shipping_price: undefined,
@@ -100,12 +109,16 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         price: Number(product.price),
         compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : undefined,
         image_url: product.image_url ?? '',
+        images: product.images ?? [],
+        colors: product.colors ?? [],
         category_id: product.category_id ?? '',
         stock: product.stock,
         shipping_price: product.shipping_price != null ? Number(product.shipping_price) : undefined,
         is_featured: product.is_featured,
         is_active: product.is_active,
       });
+      setImages(product.images ?? []);
+      setColors(product.colors ?? []);
     }
   }, [product, form]);
 
@@ -137,14 +150,17 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
   }, [nameValue, autoSlug, form]);
 
   const onSubmit = async (values: ProductFormValues) => {
+    const normalizedImages = values.images && values.images.length > 0 ? values.images : [];
+    const primaryImage = values.image_url || normalizedImages[0] || null;
     const payload = {
       name: values.name,
       slug: values.slug,
       description: values.description || null,
       price: values.price,
       compare_at_price: values.compare_at_price === '' || values.compare_at_price == null ? null : Number(values.compare_at_price),
-      image_url: values.image_url || null,
-      images: [] as string[],
+      image_url: primaryImage,
+      images: normalizedImages,
+      colors: values.colors && values.colors.length > 0 ? values.colors : [],
       category_id: values.category_id || null,
       stock: values.stock,
       shipping_price: values.shipping_price === '' || values.shipping_price == null ? null : Number(values.shipping_price),
@@ -166,6 +182,10 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       if (!isEditing) {
         form.reset();
         setSizeRows(DEFAULT_SIZES.map((size) => ({ size, stock: 0, is_enabled: true })));
+        setImages([]);
+        setImageInput('');
+        setColors([]);
+        setColorInput('');
       }
     } catch {
       // Error handled by mutation
@@ -180,6 +200,96 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
 
   const handleSizeEnabledChange = (size: string) => {
     setSizeRows((prev) => prev.map((r) => (r.size === size ? { ...r, is_enabled: !r.is_enabled } : r)));
+  };
+
+  const isValidImageUrl = (value: string) => {
+    try {
+      const url = new URL(value.trim());
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const updateImages = (next: string[]) => {
+    setImages(next);
+    form.setValue('images', next);
+  };
+
+  const handleAddImage = () => {
+    const entries = imageInput
+      .split(/[\n,]/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (entries.length === 0) return;
+
+    const next = [...images];
+    let added = 0;
+    entries.forEach((entry) => {
+      if (!isValidImageUrl(entry)) {
+        toast.error(`"${entry}" is not a valid image URL.`);
+        return;
+      }
+      if (!next.includes(entry)) {
+        next.push(entry);
+        added += 1;
+      }
+    });
+
+    if (added > 0) {
+      updateImages(next);
+      setImageInput('');
+    }
+  };
+
+  const handleRemoveImage = (value: string) => {
+    updateImages(images.filter((img) => img !== value));
+  };
+
+  const isValidColor = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    const hexMatch = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed);
+    if (hexMatch) return true;
+    if (typeof window === 'undefined') return false;
+    const tester = new Option().style;
+    tester.color = trimmed;
+    return tester.color !== '';
+  };
+
+  const updateColors = (next: string[]) => {
+    setColors(next);
+    form.setValue('colors', next);
+  };
+
+  const handleAddColor = () => {
+    const entries = colorInput
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (entries.length === 0) return;
+
+    const next = [...colors];
+    let added = 0;
+    entries.forEach((entry) => {
+      if (!isValidColor(entry)) {
+        toast.error(`"${entry}" is not a valid color. Use hex (e.g. #111111) or a CSS color name.`);
+        return;
+      }
+      if (!next.includes(entry)) {
+        next.push(entry);
+        added += 1;
+      }
+    });
+
+    if (added > 0) {
+      updateColors(next);
+      setColorInput('');
+    }
+  };
+
+  const handleRemoveColor = (value: string) => {
+    updateColors(colors.filter((color) => color !== value));
   };
 
   const isSubmitting = createProduct.isPending || updateProduct.isPending || bulkUpdateSizes.isPending;
@@ -308,6 +418,98 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
               className="h-full w-full object-cover"
               onError={(e) => (e.currentTarget.style.display = 'none')}
             />
+          </div>
+        )}
+      </div>
+
+      {/* Gallery Images */}
+      <div className="space-y-2">
+        <Label htmlFor="gallery_images">Gallery Images</Label>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Input
+            id="gallery_images"
+            placeholder="Add image URLs (comma or new line separated)"
+            value={imageInput}
+            onChange={(event) => setImageInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleAddImage();
+              }
+            }}
+          />
+          <Button type="button" variant="outline" onClick={handleAddImage}>
+            Add
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Add multiple URLs separated by commas or new lines. If Image URL is empty, the first
+          gallery image becomes the primary image.
+        </p>
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {images.map((img) => (
+              <div key={img} className="relative rounded-lg border border-gray-200 bg-muted overflow-hidden">
+                <img src={img} alt="Gallery" className="h-20 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(img)}
+                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs text-gray-600 hover:text-gray-900"
+                  aria-label="Remove image"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Colors */}
+      <div className="space-y-2">
+        <Label htmlFor="colors">Available Colors</Label>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Input
+            id="colors"
+            placeholder="Add colors (e.g. #111111, #facc15, purple)"
+            value={colorInput}
+            onChange={(event) => setColorInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleAddColor();
+              }
+            }}
+          />
+          <Button type="button" variant="outline" onClick={handleAddColor}>
+            Add
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Use hex values or CSS color names. Separate multiple colors with commas.
+        </p>
+        {colors.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {colors.map((color) => (
+              <div
+                key={color}
+                className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs"
+              >
+                <span
+                  className="h-4 w-4 rounded-full border border-gray-200"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-gray-700">{color}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveColor(color)}
+                  className="text-gray-400 hover:text-gray-700"
+                  aria-label={`Remove ${color}`}
+                >
+                  x
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>

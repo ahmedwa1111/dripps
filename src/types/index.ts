@@ -47,6 +47,7 @@ export interface Product {
   compare_at_price: number | null;
   image_url: string | null;
   images: string[];
+  colors?: string[] | null;
   category_id: string | null;
   stock: number;
   is_featured: boolean;
@@ -103,6 +104,7 @@ export interface CartItem {
   product: Product;
   quantity: number;
   size?: string;
+  color?: string;
 }
 
 export interface DashboardStats {

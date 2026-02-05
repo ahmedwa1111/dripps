@@ -194,6 +194,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Revenue Chart */}

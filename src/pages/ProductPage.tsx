@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { Minus, Plus, ShoppingBag, Heart, ArrowLeft, Truck, RotateCcw, Shield } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, cn, getFreeShippingThreshold } from '@/lib/utils';
 import { useFavorites } from '@/contexts/FavoritesContext';
@@ -23,6 +23,8 @@ export default function ProductPage() {
   const { toggleFavorite, isFavorite } = useFavorites();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const freeShippingThreshold = getFreeShippingThreshold();
   const freeShippingLabel = freeShippingThreshold.toLocaleString('en-US');
 
@@ -32,7 +34,20 @@ export default function ProductPage() {
     .map((s) => ({ ...s, stock: Number(s.stock) }));
   const selectedSizeData = availableSizes.find((s) => s.size === selectedSize);
   const hasSizes = availableSizes.length > 0;
+  const hasColors = !!(product?.colors && product.colors.length > 0);
   const maxQuantity = hasSizes ? (selectedSizeData?.stock ?? 0) : product?.stock ?? 0;
+
+  const galleryImages = useMemo(() => {
+    if (!product) return [];
+    const list = [product.image_url, ...(product.images ?? [])].filter(Boolean) as string[];
+    return Array.from(new Set(list));
+  }, [product]);
+
+  useEffect(() => {
+    if (!product) return;
+    const primary = galleryImages[0] || product.image_url || '/placeholder.svg';
+    setSelectedImage(primary);
+  }, [product, galleryImages]);
 
   // Auto-select first available size when sizes load (stable deps to avoid re-running every render)
   useEffect(() => {
@@ -90,9 +105,9 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (hasSizes && selectedSize) {
-      addItem(product, quantity, selectedSize);
+      addItem(product, quantity, selectedSize, selectedColor ?? undefined);
     } else if (!hasSizes) {
-      addItem(product, quantity);
+      addItem(product, quantity, undefined, selectedColor ?? undefined);
     }
     setQuantity(1);
   };
@@ -100,6 +115,7 @@ export default function ProductPage() {
   const canAddToCart = hasSizes
     ? !!(selectedSize && selectedSizeData && selectedSizeData.stock > 0)
     : (product?.stock ?? 0) > 0;
+  const canAddWithColor = hasColors ? !!selectedColor : true;
 
   const filteredRelated = relatedProducts
     .filter((p) => p.id !== product.id)
@@ -131,11 +147,32 @@ export default function ProductPage() {
           <div className="relative">
             <div className="aspect-square overflow-hidden rounded-2xl bg-white border border-gray-200">
               <img
-                src={product.image_url || '/placeholder.svg'}
+                src={selectedImage || product.image_url || product.images?.[0] || '/placeholder.svg'}
                 alt={product.name}
                 className="h-full w-full object-cover"
               />
             </div>
+            {galleryImages.length > 1 && (
+              <div className="mt-4 grid grid-cols-5 gap-2">
+                {galleryImages.map((img) => {
+                  const isActive = selectedImage === img;
+                  return (
+                    <button
+                      key={img}
+                      type="button"
+                      onClick={() => setSelectedImage(img)}
+                      className={cn(
+                        'h-16 w-full overflow-hidden rounded-lg border transition-colors',
+                        isActive ? 'border-primary' : 'border-gray-200 hover:border-primary/50'
+                      )}
+                      aria-label="Select product image"
+                    >
+                      <img src={img} alt={product.name} className="h-full w-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {/* Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-2">
               {isOnSale && (
@@ -178,6 +215,44 @@ export default function ProductPage() {
             <p className="text-muted-foreground text-lg leading-relaxed">
               {product.description}
             </p>
+
+            {hasColors && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">Color</span>
+                  {!selectedColor && (
+                    <span className="text-xs text-muted-foreground">Select a color</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors!.map((color) => {
+                    const isSelected = selectedColor === color;
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={cn(
+                          'flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors',
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30'
+                            : 'border-gray-200 bg-white text-muted-foreground hover:border-primary/40'
+                        )}
+                        aria-pressed={isSelected}
+                        aria-label={`Color ${color}`}
+                        title={color}
+                      >
+                        <span
+                          className="h-4 w-4 rounded-full border border-gray-200"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span>{color}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Size Selection - shown when product has sizes */}
             {hasSizes ? (
@@ -269,11 +344,13 @@ export default function ProductPage() {
                 size="lg"
                 className="flex-1"
                 onClick={handleAddToCart}
-                disabled={!canAddToCart}
+                disabled={!canAddToCart || !canAddWithColor}
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
                 {hasSizes && !selectedSize
                   ? 'Select Size'
+                  : hasColors && !selectedColor
+                  ? 'Select Color'
                   : canAddToCart
                   ? 'Add to Cart'
                   : 'Out of Stock'}

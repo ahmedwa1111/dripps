@@ -30,7 +30,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
       {/* Image */}
       <Link to={`/product/${product.slug}`} className="block aspect-square overflow-hidden">
         <img
-          src={product.image_url || '/placeholder.svg'}
+          src={product.image_url || product.images?.[0] || '/placeholder.svg'}
           alt={product.name}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />

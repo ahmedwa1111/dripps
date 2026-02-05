@@ -71,7 +71,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <div
-                key={`${item.product.id}-${item.size || 'default'}`}
+                key={`${item.product.id}-${item.size || 'default'}-${item.color || 'default'}`}
                 className="glass-card flex gap-4 p-4"
               >
                 {/* Image */}
@@ -80,7 +80,7 @@ export default function CartPage() {
                   className="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden bg-muted border border-gray-200"
                 >
                   <img
-                    src={item.product.image_url || '/placeholder.svg'}
+                    src={item.product.image_url || item.product.images?.[0] || '/placeholder.svg'}
                     alt={item.product.name}
                     className="h-full w-full object-cover"
                   />
@@ -106,9 +106,21 @@ export default function CartPage() {
                           Size: <span className="font-medium text-foreground">{item.size}</span>
                         </p>
                       )}
+                      {item.color && (
+                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                          Color:
+                          <span className="flex items-center gap-2 font-medium text-foreground">
+                            <span
+                              className="h-3 w-3 rounded-full border border-gray-200"
+                              style={{ backgroundColor: item.color }}
+                            />
+                            {item.color}
+                          </span>
+                        </p>
+                      )}
                     </div>
                     <button
-                      onClick={() => removeItem(item.product.id, item.size)}
+                      onClick={() => removeItem(item.product.id, item.size, item.color)}
                       className="text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-5 w-5" />
@@ -119,14 +131,14 @@ export default function CartPage() {
                     {/* Quantity */}
                     <div className="flex items-center border border-gray-200 rounded-lg bg-white">
                       <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.size)}
+                        onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.size, item.color)}
                         className="p-2 hover:bg-gray-50 transition-colors"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="w-10 text-center text-sm font-medium">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.size)}
+                        onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.size, item.color)}
                         className="p-2 hover:bg-gray-50 transition-colors"
                       >
                         <Plus className="h-4 w-4" />

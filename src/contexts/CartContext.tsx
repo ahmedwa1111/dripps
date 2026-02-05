@@ -4,9 +4,9 @@ import { toast } from 'sonner';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number, size?: string) => void;
-  removeItem: (productId: string, size?: string) => void;
-  updateQuantity: (productId: string, quantity: number, size?: string) => void;
+  addItem: (product: Product, quantity?: number, size?: string, color?: string) => void;
+  removeItem: (productId: string, size?: string, color?: string) => void;
+  updateQuantity: (productId: string, quantity: number, size?: string, color?: string) => void;
   clearCart: () => void;
   itemCount: number;
   subtotal: number;
@@ -16,9 +16,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = 'drippss-cart';
 
-// Helper to create a unique key for cart items (product + size)
-const getCartItemKey = (productId: string, size?: string) => 
-  size ? `${productId}-${size}` : productId;
+// Helper to create a unique key for cart items (product + size + color)
+const getCartItemKey = (productId: string, size?: string, color?: string) =>
+  `${productId}::${size ?? 'nosize'}::${color ?? 'nocolor'}`;
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -30,52 +30,55 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  const addItem = (product: Product, quantity = 1, size?: string) => {
+  const addItem = (product: Product, quantity = 1, size?: string, color?: string) => {
     setItems(prev => {
       // Find existing item with same product AND size
       const existingItem = prev.find(
-        item => item.product.id === product.id && item.size === size
+        item => item.product.id === product.id && item.size === size && item.color === color
       );
       
       if (existingItem) {
         const newQuantity = existingItem.quantity + quantity;
+        const label = [size, color].filter(Boolean).join(', ');
         
-        toast.success(`Updated ${product.name}${size ? ` (${size})` : ''} quantity`);
+        toast.success(`Updated ${product.name}${label ? ` (${label})` : ''} quantity`);
         return prev.map(item =>
-          item.product.id === product.id && item.size === size
+          item.product.id === product.id && item.size === size && item.color === color
             ? { ...item, quantity: newQuantity }
             : item
         );
       }
 
-      toast.success(`Added ${product.name}${size ? ` (${size})` : ''} to cart`);
-      return [...prev, { product, quantity, size }];
+      const label = [size, color].filter(Boolean).join(', ');
+      toast.success(`Added ${product.name}${label ? ` (${label})` : ''} to cart`);
+      return [...prev, { product, quantity, size, color }];
     });
   };
 
-  const removeItem = (productId: string, size?: string) => {
+  const removeItem = (productId: string, size?: string, color?: string) => {
     setItems(prev => {
       const item = prev.find(
-        i => i.product.id === productId && i.size === size
+        i => i.product.id === productId && i.size === size && i.color === color
       );
       if (item) {
-        toast.success(`Removed ${item.product.name}${size ? ` (${size})` : ''} from cart`);
+        const label = [size, color].filter(Boolean).join(', ');
+        toast.success(`Removed ${item.product.name}${label ? ` (${label})` : ''} from cart`);
       }
       return prev.filter(
-        item => !(item.product.id === productId && item.size === size)
+        item => !(item.product.id === productId && item.size === size && item.color === color)
       );
     });
   };
 
-  const updateQuantity = (productId: string, quantity: number, size?: string) => {
+  const updateQuantity = (productId: string, quantity: number, size?: string, color?: string) => {
     if (quantity < 1) {
-      removeItem(productId, size);
+      removeItem(productId, size, color);
       return;
     }
 
     setItems(prev => {
       return prev.map(item =>
-        item.product.id === productId && item.size === size
+        item.product.id === productId && item.size === size && item.color === color
           ? { ...item, quantity }
           : item
       );

@@ -28,6 +28,7 @@ export type SocialLinks = {
   tiktok?: string;
 };
 
+
 export function getFreeShippingThreshold(): number {
   if (typeof window === 'undefined') return FAST_SHIPPING_THRESHOLD;
   const stored = window.localStorage.getItem(FREE_SHIPPING_STORAGE_KEY);
@@ -76,6 +77,7 @@ export function setSocialLinks(links: SocialLinks): void {
   window.localStorage.setItem(SOCIAL_LINKS_STORAGE_KEY, JSON.stringify(normalized));
   window.dispatchEvent(new CustomEvent('social-links-updated', { detail: normalized }));
 }
+
 
 /** Item count above which shipping is doubled (e.g. 6+ items = 2x shipping) */
 export const SHIPPING_DOUBLE_ITEMS_THRESHOLD = 5;

@@ -335,6 +335,13 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium line-clamp-1">{item.product.name}</p>
+                        {(item.size || item.color) && (
+                          <p className="text-xs text-muted-foreground">
+                            {[item.size ? `Size: ${item.size}` : null, item.color ? `Color: ${item.color}` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           {formatCurrency(item.product.price * item.quantity)}
                         </p>
