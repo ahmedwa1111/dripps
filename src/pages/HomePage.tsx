@@ -6,7 +6,36 @@ import { ProductSlider } from '@/components/product/ProductSlider';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { ArrowRight, Truck, Shield, RotateCcw, Sparkles } from 'lucide-react';
-import { getFreeShippingThreshold } from '@/lib/utils';
+import { formatCurrency, getFreeShippingThreshold } from '@/lib/utils';
+
+type HeroItem = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  slug?: string;
+};
+
+const fallbackHeroItems: HeroItem[] = [
+  {
+    id: 'hero-tee',
+    name: 'Essential Oversized Tee',
+    price: 800,
+    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600',
+  },
+  {
+    id: 'hero-hoodie',
+    name: 'Stacked Logo Hoodie',
+    price: 1200,
+    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600',
+  },
+  {
+    id: 'hero-pants',
+    name: 'Cargo Street Pants',
+    price: 950,
+    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600',
+  },
+];
 
 export default function HomePage() {
   const { data: featuredProducts = [], isLoading: loadingProducts } = useProducts({ featured: true });
@@ -14,77 +43,121 @@ export default function HomePage() {
   const { data: categories = [] } = useCategories();
   const freeShippingThreshold = getFreeShippingThreshold();
   const freeShippingLabel = freeShippingThreshold.toLocaleString('en-US');
+  const heroItems: HeroItem[] = featuredProducts.length
+    ? featuredProducts.slice(0, 3).map((product) => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        slug: product.slug,
+        image: product.image_url || product.images?.[0] || '/placeholder.svg',
+      }))
+    : fallbackHeroItems;
 
   return (
     <MainLayout>
       {/* Hero Section */}
-      <section className="drip-hero-gradient">
-        <div className="container mx-auto px-4 py-20 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8 animate-fade-up">
-              <div className="drip-badge drip-badge-purple">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-sm font-medium">New Collection 2026</span>
+      <section className="street-hero">
+        <div className="container mx-auto px-4 py-16 lg:py-24">
+          <div className="street-hero-frame px-6 py-8 lg:px-10 lg:py-10">
+            <div className="street-hero-top">
+              <div className="street-hero-mark">
+                <span className="street-hero-orbit" />
+                <span>DRIPPSS</span>
               </div>
-              
-              <h1 className="font-display text-5xl lg:text-7xl font-bold tracking-tight">
-                <span className="block">Elevate Your</span>
-                <span className="drip-gradient-text">Street Style</span>
-              </h1>
-              
-              <p className="text-xl text-muted-foreground max-w-lg">
-                Premium streetwear designed for those who dare to stand out. 
-                Bold designs, quality materials, endless confidence.
-              </p>
-              
-              <div className="flex flex-wrap gap-4">
-                <Link to="/shop">
-                  <Button variant="hero" size="xl">
-                    Shop Now
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
+              <div className="hidden md:flex items-center gap-8">
+                <Link to="/" className="transition-colors hover:text-foreground">
+                  Home
                 </Link>
-                <Link to="/shop?category=Products">
-                  <Button variant="heroOutline" size="xl">
-                    View Products
-                  </Button>
+                <Link to="/shop" className="transition-colors hover:text-foreground">
+                  All Products
                 </Link>
+                <Link to="/shop?category=tops-and-more" className="transition-colors hover:text-foreground">
+                  Tops & more
+                </Link>
+              </div>
+              <div className="hidden md:flex items-center gap-2">
+                <span>Cart</span>
+                <span className="text-[0.6rem]">(00)</span>
               </div>
             </div>
 
-            <div className="relative hidden lg:block">
-              <div className="relative z-10 grid grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <img
-                      src="https://ik.imagekit.io/u0uzeoqia/AmplifyLeggingBlack3_25e0933f-d3e2-40e8-972d-22716d14d0b0.webp"
-                      alt="Tops & more"
-                      className="w-full h-64 object-cover"
-                    />
+            <div className="street-hero-body">
+              <aside className="street-hero-stack order-2 lg:order-1">
+                {heroItems.map((item, index) => (
+                  <Link
+                    key={item.id}
+                    to={item.slug ? `/product/${item.slug}` : '/shop'}
+                    className="street-hero-product animate-fade-up"
+                    style={{ animationDelay: `${150 + index * 90}ms` }}
+                  >
+                    <div className="street-hero-product-image">
+                      <img src={item.image} alt={item.name} loading="lazy" />
+                      <span className="street-hero-price">{formatCurrency(item.price)}</span>
+                    </div>
+                    <span className="street-hero-product-name">{item.name}</span>
+                  </Link>
+                ))}
+              </aside>
+
+              <div className="street-hero-copy order-1 lg:order-2 animate-fade-up" style={{ animationDelay: '80ms' }}>
+                <div className="street-hero-kicker">
+                  <Sparkles className="h-4 w-4 text-[hsl(var(--brand-highlight))]" />
+                  <span>New Collection 2026</span>
+                </div>
+
+                <h1 className="street-hero-title">
+                  Born from the streets
+                  <span className="block">
+                    Built for the <span className="street-hero-scribble">culture</span>
+                  </span>
+                </h1>
+
+                <p className="street-hero-subtitle">
+                  Premium streetwear with sharp silhouettes, bold prints, and everyday comfort. Designed in Cairo,
+                  worn everywhere.
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/shop">
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="uppercase tracking-[0.2em] bg-[hsl(var(--brand-highlight))] text-[hsl(var(--brand-highlight-foreground))] hover:bg-[hsl(var(--brand-highlight)/0.9)]"
+                    >
+                      Shop the drop
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/shop">
+                    <Button variant="heroOutline" size="lg" className="uppercase tracking-[0.2em]">
+                      View all
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="street-hero-metrics">
+                  <div className="street-hero-metric">
+                    <span>Season</span>
+                    <strong>SS.26</strong>
                   </div>
-                  <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <img
-                      src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600"
-                      alt="Pants"
-                      className="w-full h-40 object-cover"
-                    />
+                  <div className="street-hero-metric">
+                    <span>Drop</span>
+                    <strong>Limited</strong>
+                  </div>
+                  <div className="street-hero-metric">
+                    <span>Shipping</span>
+                    <strong>48 hrs</strong>
                   </div>
                 </div>
-                <div className="space-y-4 pt-8">
-                  <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <img
-                      src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600"
-                      alt="Leggings"
-                      className="w-full h-40 object-cover"
-                    />
-                  </div>
-                  <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <img
-                      src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600"
-                      alt="Pants"
-                      className="w-full h-64 object-cover"
-                    />
-                  </div>
+              </div>
+
+              <div className="street-hero-accent order-3">
+                <span className="street-hero-accent-label">Collection</span>
+                <div>
+                  <div className="street-hero-accent-title">Culture Lab</div>
+                  <p className="street-hero-accent-sub">
+                    Statement pieces inspired by the city and built for the daily grind.
+                  </p>
                 </div>
               </div>
             </div>

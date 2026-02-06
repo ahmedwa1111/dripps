@@ -17,9 +17,9 @@ const buttonVariants = cva(
         ghost: "bg-transparent text-foreground hover:bg-gray-100",
         link: "text-primary underline-offset-4 hover:underline",
         // Drippss custom variants
-        hero: "bg-yellow-400 text-black hover:bg-yellow-500 font-display",
-        heroOutline: "border border-primary text-primary bg-transparent hover:bg-primary/10 font-display",
-        accent: "bg-yellow-400 text-black hover:bg-yellow-500 font-display",
+        hero: "bg-[hsl(var(--brand-accent))] text-[hsl(var(--brand-accent-foreground))] hover:bg-[hsl(var(--brand-accent-strong))] font-display",
+        heroOutline: "border border-[hsl(var(--brand-accent))] text-[hsl(var(--brand-accent))] bg-transparent hover:bg-[hsl(var(--brand-accent)/0.1)] font-display",
+        accent: "bg-[hsl(var(--brand-accent))] text-[hsl(var(--brand-accent-foreground))] hover:bg-[hsl(var(--brand-accent-strong))] font-display",
       },
       size: {
         default: "h-10 px-4 py-2",
