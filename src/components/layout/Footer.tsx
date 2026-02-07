@@ -111,6 +111,12 @@ export function Footer() {
               (c) {currentYear} Drippss. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
+              <a
+                href="mailto:support@drippss.com"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline decoration-purple-400/80"
+              >
+                Support: support@drippss.com
+              </a>
               <Link
                 to="/privacy-policy"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline decoration-purple-400/80"
