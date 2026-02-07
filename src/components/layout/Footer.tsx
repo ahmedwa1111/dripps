@@ -45,8 +45,10 @@ export function Footer() {
               />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground max-w-xs">
-              Elevate your style with premium streetwear. Bold designs, quality materials,
-              and the confidence to stand out.
+              Elevate your style with{' '}
+              <span className="text-purple-600">premium streetwear</span>. Bold designs,
+              quality materials, and the <span className="text-yellow-600">confidence</span>{' '}
+              to stand out.
             </p>
             <div className="flex items-center gap-4 mt-6">
               {socialLinks.instagram && (
@@ -87,7 +89,7 @@ export function Footer() {
 
           {/* Shop Links */}
           <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Shop</h4>
+            <h4 className="font-display font-semibold text-lg mb-4 text-purple-600">Shop</h4>
             <ul className="space-y-3">
               {footerLinks.shop.map((link) => (
                 <li key={link.href}>
@@ -115,7 +117,7 @@ export function Footer() {
                 href="mailto:support@drippss.com"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline decoration-purple-400/80"
               >
-                Support: support@drippss.com
+                Support: <span className="text-yellow-600">support@drippss.com</span>
               </a>
               <Link
                 to="/privacy-policy"
