@@ -33,6 +33,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isStaff, loading, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const activeNavItem = navItems.find((item) =>
+    item.href === '/admin'
+      ? location.pathname === item.href
+      : location.pathname.startsWith(item.href)
+  );
 
   if (loading) {
     return (
@@ -86,7 +91,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive =
+                item.href === '/admin'
+                  ? location.pathname === item.href
+                  : location.pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -138,7 +146,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </button>
           <div className="flex-1">
             <h1 className="font-display text-lg font-semibold">
-              {navItems.find((item) => item.href === location.pathname)?.label || 'Dashboard'}
+              {activeNavItem?.label || 'Dashboard'}
             </h1>
           </div>
           <div className="flex items-center gap-4">

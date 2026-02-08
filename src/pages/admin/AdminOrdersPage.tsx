@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useOrders, useUpdateOrderStatus } from '@/hooks/useOrders';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,8 @@ import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { OrderStatus } from '@/types';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { openInvoicePdf } from '@/lib/invoice';
 
 const statusColors: Record<OrderStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -97,6 +100,8 @@ const extractConfirmedBy = (notes: string | null) => {
 };
 
 export default function AdminOrdersPage() {
+  const navigate = useNavigate();
+  const { session } = useAuth();
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const { data: orders = [], isLoading } = useOrders(
     statusFilter !== 'all' ? { status: statusFilter } : undefined
@@ -148,6 +153,14 @@ export default function AdminOrdersPage() {
     updateStatus.mutate({ id: processingOrderId, status: 'processing', notes: updatedNotes });
     setConfirmDialogOpen(false);
     setProcessingOrderId(null);
+  };
+
+  const handlePrintInvoice = async (orderId: string) => {
+    try {
+      await openInvoicePdf(orderId, session?.access_token);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to open invoice.');
+    }
   };
 
   return (
@@ -248,6 +261,13 @@ export default function AdminOrdersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => navigate(`/admin/orders/${order.id}`)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handlePrintInvoice(order.id)}>
+                            Print Invoice
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuLabel>Update Status</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem

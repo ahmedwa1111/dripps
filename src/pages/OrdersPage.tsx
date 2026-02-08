@@ -8,6 +8,8 @@ import { Package, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { OrderStatus } from '@/types';
+import { downloadInvoicePdf } from '@/lib/invoice';
+import { toast } from 'sonner';
 
 const statusColors: Record<OrderStatus, string> = {
   pending: 'border border-yellow-200 text-yellow-800 bg-yellow-50',
@@ -18,8 +20,16 @@ const statusColors: Record<OrderStatus, string> = {
 };
 
 export default function OrdersPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const { data: orders = [], isLoading } = useUserOrders();
+
+  const handleDownload = async (orderId: string) => {
+    try {
+      await downloadInvoicePdf(orderId, session?.access_token);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to download invoice.');
+    }
+  };
 
   if (authLoading) {
     return (
@@ -104,6 +114,16 @@ export default function OrdersPage() {
                     <p className="font-display font-bold text-lg">
                       {formatCurrency(Number(order.total))}
                     </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link to={`/order/${order.id}`}>
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                    </Link>
+                    <Button variant="hero" size="sm" onClick={() => handleDownload(order.id)}>
+                      Download Invoice
+                    </Button>
                   </div>
                 </div>
               </div>

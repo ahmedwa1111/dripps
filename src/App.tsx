@@ -16,6 +16,7 @@ import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import LoginPage from "./pages/LoginPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderInvoicePage from "./pages/OrderInvoicePage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -26,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
+import AdminOrderDetailsPage from "./pages/admin/AdminOrderDetailsPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,7 @@ const App = () => (
                 <Route path="/payment-result" element={<PaymentResultPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/order/:id" element={<OrderInvoicePage />} />
                 <Route path="/favorites" element={<FavoritesPage />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
@@ -58,6 +61,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminDashboardPage />} />
                 <Route path="/admin/products" element={<AdminProductsPage />} />
                 <Route path="/admin/orders" element={<AdminOrdersPage />} />
+                <Route path="/admin/orders/:id" element={<AdminOrderDetailsPage />} />
                 <Route path="/admin/categories" element={<AdminCategoriesPage />} />
 
                 <Route path="*" element={<NotFound />} />
