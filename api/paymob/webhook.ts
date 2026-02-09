@@ -124,38 +124,109 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq("id", merchantOrderId)
       .maybeSingle();
 
-    if (error || !order) {
+    if (order && !error) {
+      if (order.payment_status === "paid") {
+        res.status(200).json({ ok: true, status: "already_paid" });
+        return;
+      }
+
+      const updatePayload: Record<string, any> = {
+        payment_method: "card",
+        payment_status: "paid",
+        transaction_id: transactionId ?? null,
+        paid_at: new Date().toISOString(),
+      };
+
+      if (amountCents && (!order.total_amount_cents || order.total_amount_cents === 0)) {
+        updatePayload.total_amount_cents = amountCents;
+      }
+
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update(updatePayload)
+        .eq("id", merchantOrderId);
+
+      if (updateError) {
+        res.status(500).json({ error: "Failed to update order payment" });
+        return;
+      }
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    const { data: pending, error: pendingError } = await supabase
+      .from("pending_orders")
+      .select("*")
+      .eq("id", merchantOrderId)
+      .maybeSingle();
+
+    if (pendingError || !pending) {
       res.status(404).json({ error: "Order not found" });
       return;
     }
 
-    if (order.payment_status === "paid") {
-      res.status(200).json({ ok: true, status: "already_paid" });
-      return;
-    }
-
-    const updatePayload: Record<string, any> = {
+    const orderPayload: Record<string, any> = {
+      id: pending.id,
+      user_id: pending.user_id,
+      status: "pending",
       payment_method: "card",
       payment_status: "paid",
       transaction_id: transactionId ?? null,
       paid_at: new Date().toISOString(),
+      subtotal: Number(pending.subtotal || 0),
+      shipping_cost: Number(pending.shipping_cost || 0),
+      total: Number(pending.total || 0),
+      total_amount_cents:
+        Number(pending.total_amount_cents || 0) ||
+        (amountCents ? Number(amountCents) : 0),
+      shipping_address: pending.shipping_address,
+      billing_address: pending.billing_address ?? pending.shipping_address,
+      customer_email: pending.customer_email,
+      customer_name: pending.customer_name,
+      notes: pending.notes ?? null,
     };
 
-    if (amountCents && (!order.total_amount_cents || order.total_amount_cents === 0)) {
-      updatePayload.total_amount_cents = amountCents;
-    }
-
-    const { error: updateError } = await supabase
+    const { data: createdOrder, error: insertError } = await supabase
       .from("orders")
-      .update(updatePayload)
-      .eq("id", merchantOrderId);
+      .insert(orderPayload)
+      .select("id")
+      .maybeSingle();
 
-    if (updateError) {
-      res.status(500).json({ error: "Failed to update order payment" });
-      return;
+    if (insertError) {
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("id", merchantOrderId)
+        .maybeSingle();
+
+      if (!existingOrder) {
+        res.status(500).json({ error: "Failed to create order after payment" });
+        return;
+      }
     }
 
-    res.status(200).json({ ok: true });
+    const orderItems = Array.isArray(pending.order_items) ? pending.order_items : [];
+    if (orderItems.length > 0) {
+      const itemsPayload = orderItems.map((item: any) => ({
+        order_id: pending.id,
+        product_id: item.product_id ?? null,
+        product_name: item.product_name ?? "Item",
+        product_image: item.product_image ?? null,
+        quantity: Number(item.quantity || 1),
+        unit_price: Number(item.unit_price || 0),
+        total_price: Number(item.total_price || 0),
+      }));
+
+      await supabase.from("order_items").insert(itemsPayload);
+    }
+
+    await supabase
+      .from("pending_orders")
+      .update({ status: "consumed", consumed_at: new Date().toISOString() })
+      .eq("id", pending.id);
+
+    res.status(200).json({ ok: true, orderId: pending.id });
   } catch (updateErr) {
     console.error("Paymob webhook update failed:", updateErr);
     res.status(500).json({ error: "Failed to process webhook" });

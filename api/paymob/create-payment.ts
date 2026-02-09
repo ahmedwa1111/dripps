@@ -1,12 +1,26 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import crypto from "crypto";
+import { getSupabaseAdminClient } from "../_lib/supabase";
 
 const PAYMOB_BASE_URL = "https://accept.paymob.com/api";
 
 type CreatePaymentBody = {
   amountCents: number;
-  merchantOrderId: string;
   billingData: Record<string, string | number | null>;
   items?: Array<Record<string, string | number>>;
+  orderPayload: {
+    userId?: string | null;
+    customerEmail: string;
+    customerName: string;
+    notes?: string | null;
+    shippingAddress: Record<string, unknown> | null;
+    billingAddress?: Record<string, unknown> | null;
+    subtotal: number;
+    shippingCost: number;
+    total: number;
+    totalAmountCents: number;
+    orderItems: Array<Record<string, string | number | null>>;
+  };
 };
 
 const getEnv = (key: string): string => {
@@ -39,10 +53,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { amountCents, merchantOrderId, billingData, items } =
+    const { amountCents, billingData, items, orderPayload } =
       (req.body as CreatePaymentBody) || {};
 
-    if (!amountCents || !merchantOrderId || !billingData) {
+    if (!amountCents || !billingData || !orderPayload) {
       res.status(400).json({ error: "Missing required payment fields" });
       return;
     }
@@ -55,12 +69,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       api_key: apiKey,
     });
 
+    const pendingId = crypto.randomUUID();
+    const supabase = getSupabaseAdminClient();
+
+    const { error: pendingError } = await supabase.from("pending_orders").insert({
+      id: pendingId,
+      status: "pending",
+      user_id: orderPayload.userId ?? null,
+      customer_email: orderPayload.customerEmail,
+      customer_name: orderPayload.customerName,
+      notes: orderPayload.notes ?? null,
+      shipping_address: orderPayload.shippingAddress ?? null,
+      billing_address: orderPayload.billingAddress ?? orderPayload.shippingAddress ?? null,
+      subtotal: orderPayload.subtotal,
+      shipping_cost: orderPayload.shippingCost,
+      total: orderPayload.total,
+      total_amount_cents: orderPayload.totalAmountCents,
+      currency: "EGP",
+      payment_method: "card",
+      order_items: orderPayload.orderItems ?? [],
+    });
+
+    if (pendingError) {
+      res.status(500).json({ error: "Failed to prepare payment order" });
+      return;
+    }
+
     const order = await postJson<{ id: number }>(`${PAYMOB_BASE_URL}/ecommerce/orders`, {
       auth_token: auth.token,
       delivery_needed: "false",
       amount_cents: amountCents,
       currency: "EGP",
-      merchant_order_id: merchantOrderId,
+      merchant_order_id: pendingId,
       items: items ?? [],
     });
 
@@ -80,10 +120,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentKey.token}`;
 
+    await supabase
+      .from("pending_orders")
+      .update({ paymob_order_id: order.id, updated_at: new Date().toISOString() })
+      .eq("id", pendingId);
+
     res.status(200).json({
       iframeUrl,
       paymobOrderId: order.id,
-      merchantOrderId,
+      merchantOrderId: pendingId,
     });
   } catch (error) {
     console.error("Paymob create-payment failed:", error);

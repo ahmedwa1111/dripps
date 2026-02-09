@@ -88,42 +88,42 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      // 1) Create order in your system first
-      const created = await createOrder.mutateAsync({
-        shippingAddress: {
-          ...shippingAddress,
-          firstName: shippingAddress.firstName || customerInfo.firstName,
-          lastName: shippingAddress.lastName || customerInfo.lastName,
-          country: 'EG',
-        },
-        customerEmail: customerInfo.email,
-        customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-        paymentMethod,
-      });
-
       if (paymentMethod === 'cod') {
-        setOrderComplete(true);
-        toast.success('Order placed. Pay with cash on delivery.');
+        const created = await createOrder.mutateAsync({
+          shippingAddress: {
+            ...shippingAddress,
+            firstName: shippingAddress.firstName || customerInfo.firstName,
+            lastName: shippingAddress.lastName || customerInfo.lastName,
+            country: 'EG',
+          },
+          customerEmail: customerInfo.email,
+          customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          paymentMethod,
+        });
+
+        if (created) {
+          setOrderComplete(true);
+          toast.success('Order placed. Pay with cash on delivery.');
+        }
         return;
       }
 
-      // لازم يكون ده order id من قاعدة بياناتك
-      const merchantOrderId =
-        (created as any)?.id ||
-        (created as any)?.order?.id ||
-        (created as any)?.data?.id ||
-        `ORDER_${Date.now()}`;
-
-      // 2) Amount in cents (EGP)
+      // Card payment: create pending order on server, then redirect to Paymob.
       const amountCents = Math.round(total * 100);
+      const orderItems = items.map((item) => ({
+        product_id: item.product.id,
+        product_name: item.product.name,
+        product_image: item.product.image_url,
+        quantity: item.quantity,
+        unit_price: item.product.price,
+        total_price: item.product.price * item.quantity,
+      }));
 
-      // 3) Ask server to create paymob payment + return iframeUrl
       const resp = await fetch('/api/paymob/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountCents,
-          merchantOrderId,
           billingData: {
             first_name: customerInfo.firstName || shippingAddress.firstName || 'Customer',
             last_name: customerInfo.lastName || shippingAddress.lastName || 'Name',
@@ -145,6 +145,29 @@ export default function CheckoutPage() {
             description: i.product.description || i.product.name,
             quantity: i.quantity,
           })),
+          orderPayload: {
+            userId: user?.id ?? null,
+            customerEmail: customerInfo.email,
+            customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+            notes: null,
+            shippingAddress: {
+              ...shippingAddress,
+              firstName: shippingAddress.firstName || customerInfo.firstName,
+              lastName: shippingAddress.lastName || customerInfo.lastName,
+              country: 'EG',
+            },
+            billingAddress: {
+              ...shippingAddress,
+              firstName: shippingAddress.firstName || customerInfo.firstName,
+              lastName: shippingAddress.lastName || customerInfo.lastName,
+              country: 'EG',
+            },
+            subtotal,
+            shippingCost,
+            total,
+            totalAmountCents: amountCents,
+            orderItems,
+          },
           returnUrl: `${window.location.origin}/payment-result`,
         }),
       });

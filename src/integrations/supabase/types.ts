@@ -238,6 +238,72 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_orders: {
+        Row: {
+          billing_address: Json | null
+          consumed_at: string | null
+          created_at: string
+          currency: string | null
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          notes: string | null
+          order_items: Json
+          paymob_order_id: number | null
+          payment_method: string | null
+          shipping_address: Json | null
+          shipping_cost: number | null
+          status: string
+          subtotal: number | null
+          total: number | null
+          total_amount_cents: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          billing_address?: Json | null
+          consumed_at?: string | null
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id: string
+          notes?: string | null
+          order_items?: Json
+          paymob_order_id?: number | null
+          payment_method?: string | null
+          shipping_address?: Json | null
+          shipping_cost?: number | null
+          status?: string
+          subtotal?: number | null
+          total?: number | null
+          total_amount_cents?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          billing_address?: Json | null
+          consumed_at?: string | null
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          order_items?: Json
+          paymob_order_id?: number | null
+          payment_method?: string | null
+          shipping_address?: Json | null
+          shipping_cost?: number | null
+          status?: string
+          subtotal?: number | null
+          total?: number | null
+          total_amount_cents?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category_id: string | null
