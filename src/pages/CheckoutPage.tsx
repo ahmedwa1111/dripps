@@ -7,7 +7,8 @@ import { useCreateOrder } from '@/hooks/useOrders';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Lock, CreditCard, Check } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ArrowLeft, Lock, CreditCard, Check, Wallet } from 'lucide-react';
 import { Address } from '@/types';
 import { toast } from 'sonner';
 import { formatCurrency, getFreeShippingThreshold, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD, MAX_SHIPPING_COST } from '@/lib/utils';
@@ -56,6 +57,7 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cod'>('card');
 
   const freeShippingThreshold = getFreeShippingThreshold();
   const { cost: shippingCost, isDoubled: shippingIsDoubled } = getShippingCost(
@@ -96,7 +98,14 @@ export default function CheckoutPage() {
         },
         customerEmail: customerInfo.email,
         customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        paymentMethod,
       });
+
+      if (paymentMethod === 'cod') {
+        setOrderComplete(true);
+        toast.success('Order placed. Pay with cash on delivery.');
+        return;
+      }
 
       // لازم يكون ده order id من قاعدة بياناتك
       const merchantOrderId =
@@ -136,19 +145,25 @@ export default function CheckoutPage() {
         }),
       });
 
-      const data = await resp.json();
+      const data = await resp.json().catch(() => ({}));
 
       if (!resp.ok) {
-        console.error('Paymob create-payment error:', data);
-        toast.error(data?.error || 'Payment setup failed');
-        return;
+        const message =
+          typeof data?.error === 'string' && data.error.length > 0
+            ? data.error
+            : 'Payment setup failed';
+        throw new Error(message);
       }
 
       // 4) Redirect to Paymob iframe
       window.location.href = data.iframeUrl;
     } catch (error) {
       console.error('Checkout failed:', error);
-      toast.error('Checkout failed. Please try again.');
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Checkout failed. Please try again.';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -166,8 +181,14 @@ export default function CheckoutPage() {
             </div>
             <h1 className="font-display text-3xl font-bold mb-4">Order Confirmed!</h1>
             <p className="text-muted-foreground mb-8">
-              Thank you for your order. We've sent a confirmation email to{' '}
-              <span className="font-medium text-foreground">{customerInfo.email}</span>.
+              Thank you for your order.{' '}
+              {paymentMethod === 'cod'
+                ? 'You selected Cash on Delivery.'
+                : "We've sent a confirmation email to"}{' '}
+              {paymentMethod === 'cod' ? null : (
+                <span className="font-medium text-foreground">{customerInfo.email}</span>
+              )}
+              {paymentMethod === 'cod' ? null : '.'}
             </p>
             <div className="space-y-4">
               <Link to="/orders">
@@ -312,12 +333,48 @@ export default function CheckoutPage() {
                   <CreditCard className="h-5 w-5 text-primary" />
                   <h2 className="font-display text-xl font-bold">Payment</h2>
                 </div>
-                <div className="bg-muted rounded-lg p-4 flex items-start gap-3">
-                  <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <p className="text-sm text-muted-foreground">
-                    You will be redirected to Paymob to complete your payment securely.
-                  </p>
-                </div>
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(value) => setPaymentMethod(value as 'card' | 'cod')}
+                  className="grid gap-3"
+                >
+                  <label className="flex items-center gap-3 rounded-lg border border-border p-4 cursor-pointer">
+                    <RadioGroupItem value="card" id="pay-card" />
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-md bg-muted text-primary">
+                        <CreditCard className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Pay with Card</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay securely via Paymob (VISA/MASTERCARD).
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 rounded-lg border border-border p-4 cursor-pointer">
+                    <RadioGroupItem value="cod" id="pay-cod" />
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-md bg-muted text-amber-600">
+                        <Wallet className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Cash on Delivery</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pay in cash when your order arrives.
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                </RadioGroup>
+                {paymentMethod === 'card' && (
+                  <div className="bg-muted rounded-lg p-4 flex items-start gap-3 mt-4">
+                    <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <p className="text-sm text-muted-foreground">
+                      You will be redirected to Paymob to complete your payment securely.
+                    </p>
+                  </div>
+                )}
               </section>
             </div>
 
@@ -386,7 +443,13 @@ export default function CheckoutPage() {
                 </div>
 
                 <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Redirecting...' : 'Pay with Card'}
+                  {isSubmitting
+                    ? paymentMethod === 'card'
+                      ? 'Redirecting...'
+                      : 'Placing order...'
+                    : paymentMethod === 'card'
+                    ? 'Pay with Card'
+                    : 'Place Order (Cash on Delivery)'}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">

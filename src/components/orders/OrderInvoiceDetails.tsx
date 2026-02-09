@@ -35,6 +35,8 @@ export function OrderInvoiceDetails({ order }: { order: Order }) {
   const paymentMethod = order.payment_method
     ? order.payment_method === "card"
       ? "VISA"
+      : order.payment_method === "cod"
+      ? "Cash on Delivery"
       : order.payment_method.toUpperCase()
     : "Not set";
   const paymentStatus = order.payment_status ? order.payment_status.toUpperCase() : "UNPAID";

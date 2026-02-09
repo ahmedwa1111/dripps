@@ -105,6 +105,7 @@ export function useCreateOrder() {
       customerEmail: string;
       customerName: string;
       notes?: string;
+      paymentMethod?: "card" | "cod";
     }) => {
       const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -121,12 +122,13 @@ export function useCreateOrder() {
       const totalAmountCents = Math.round(total * 100);
 
       // Create order
+      const paymentMethod = orderData.paymentMethod ?? "card";
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user?.id ?? null,
           status: 'pending' as const,
-          payment_method: 'card',
+          payment_method: paymentMethod,
           payment_status: 'unpaid',
           subtotal,
           shipping_cost: shippingCost,
