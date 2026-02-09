@@ -87,6 +87,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error) {
     console.error("Paymob create-payment failed:", error);
-    res.status(500).json({ error: "Failed to create Paymob payment" });
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to create Paymob payment";
+    res.status(500).json({ error: message });
   }
 }

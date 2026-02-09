@@ -134,6 +134,10 @@ export default function CheckoutPage() {
             street: shippingAddress.address1 || 'NA',
             postal_code: shippingAddress.zip || 'NA',
             country: 'EG',
+            apartment: shippingAddress.address2 || 'NA',
+            floor: 'NA',
+            building: 'NA',
+            shipping_method: 'NA',
           },
           items: items.map((i) => ({
             name: i.product.name,
