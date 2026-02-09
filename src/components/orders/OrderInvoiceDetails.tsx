@@ -32,6 +32,15 @@ const buildAddressLines = (order: Order) => {
 export function OrderInvoiceDetails({ order }: { order: Order }) {
   const addressLines = buildAddressLines(order);
   const items = order.items || [];
+  const paymentMethod = order.payment_method
+    ? order.payment_method === "card"
+      ? "VISA"
+      : order.payment_method.toUpperCase()
+    : "Not set";
+  const paymentStatus = order.payment_status ? order.payment_status.toUpperCase() : "UNPAID";
+  const paidAtLabel = order.paid_at ? format(new Date(order.paid_at), "MMM d, yyyy HH:mm") : "Not paid";
+  const amountCents = order.total_amount_cents || 0;
+  const orderAmount = amountCents > 0 ? amountCents / 100 : Number(order.total);
 
   return (
     <div className="space-y-6">
@@ -48,6 +57,35 @@ export function OrderInvoiceDetails({ order }: { order: Order }) {
             <span className="text-sm text-muted-foreground">
               {format(new Date(order.created_at), "MMM d, yyyy")}
             </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-card rounded-xl border border-border p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Payment Method</p>
+            <p className="font-medium">{paymentMethod}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Payment Status</p>
+            <p className="font-medium">{paymentStatus}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Paid At</p>
+            <p className="font-medium">{paidAtLabel}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-sm text-muted-foreground">Transaction ID</p>
+            <p className="font-mono text-sm break-all">
+              {order.transaction_id || "Not available"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Order Amount</p>
+            <p className="font-medium">{formatCurrency(orderAmount)}</p>
           </div>
         </div>
       </section>

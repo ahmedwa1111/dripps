@@ -118,6 +118,7 @@ export function useCreateOrder() {
       const shippingCost =
         subtotal >= freeShippingThreshold ? 0 : Math.min(computed, MAX_SHIPPING_COST);
       const total = subtotal + shippingCost;
+      const totalAmountCents = Math.round(total * 100);
 
       // Create order
       const { data: order, error: orderError } = await supabase
@@ -125,9 +126,12 @@ export function useCreateOrder() {
         .insert({
           user_id: user?.id ?? null,
           status: 'pending' as const,
+          payment_method: 'card',
+          payment_status: 'unpaid',
           subtotal,
           shipping_cost: shippingCost,
           total,
+          total_amount_cents: totalAmountCents,
           shipping_address: orderData.shippingAddress as unknown as any,
           billing_address: (orderData.billingAddress || orderData.shippingAddress) as unknown as any,
           customer_email: orderData.customerEmail,

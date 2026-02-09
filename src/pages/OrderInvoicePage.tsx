@@ -1,17 +1,20 @@
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrder } from "@/hooks/useOrders";
 import { useQrDataUrl } from "@/hooks/useQrCode";
-import { downloadInvoicePdf, openInvoicePdf } from "@/lib/invoice";
+import { downloadInvoicePdf, openInvoicePdf, openInvoicePrintView } from "@/lib/invoice";
 import { OrderInvoiceDetails } from "@/components/orders/OrderInvoiceDetails";
 import { toast } from "sonner";
 
 export default function OrderInvoicePage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user, session, loading } = useAuth();
   const { data: order, isLoading, error } = useOrder(id || "");
+  const shouldAutoPrint = new URLSearchParams(location.search).get("print") === "1";
 
   const orderUrl =
     typeof window !== "undefined" && id ? `${window.location.origin}/order/${id}` : null;
@@ -22,7 +25,8 @@ export default function OrderInvoicePage() {
     try {
       await downloadInvoicePdf(id, session?.access_token);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to download invoice.");
+      openInvoicePrintView(id);
+      toast.error("PDF service unavailable. Opening print view instead.");
     }
   };
 
@@ -31,9 +35,19 @@ export default function OrderInvoicePage() {
     try {
       await openInvoicePdf(id, session?.access_token);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to open invoice.");
+      openInvoicePrintView(id);
+      toast.error("PDF service unavailable. Opening print view instead.");
     }
   };
+
+  useEffect(() => {
+    if (!shouldAutoPrint) return;
+    if (isLoading || error || !order) return;
+    const timeout = window.setTimeout(() => {
+      window.print();
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [shouldAutoPrint, isLoading, error, order]);
 
   if (!loading && !user) {
     return <Navigate to="/login" state={{ from: { pathname: `/order/${id}` } }} />;
@@ -41,8 +55,8 @@ export default function OrderInvoicePage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="container mx-auto px-4 py-8 space-y-6 print-page">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print-hidden">
           <div>
             <p className="text-sm text-muted-foreground">Drippss</p>
             <h1 className="font-display text-3xl font-bold">Invoice</h1>
@@ -67,7 +81,7 @@ export default function OrderInvoicePage() {
           <>
             <OrderInvoiceDetails order={order} />
 
-            <section className="bg-card rounded-xl border border-border p-6 flex flex-col sm:flex-row sm:items-center gap-6">
+            <section className="bg-card rounded-xl border border-border p-6 flex flex-col sm:flex-row sm:items-center gap-6 print-hidden">
               <div>
                 <h2 className="font-display text-lg font-bold mb-2">Order QR Code</h2>
                 <p className="text-sm text-muted-foreground">
@@ -88,7 +102,7 @@ export default function OrderInvoicePage() {
               </div>
             </section>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 print-hidden">
               <Link to="/orders">
                 <Button variant="outline">Back to Orders</Button>
               </Link>

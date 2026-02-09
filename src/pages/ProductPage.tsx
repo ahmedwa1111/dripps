@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, cn, getFreeShippingThreshold } from '@/lib/utils';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { toast } from 'sonner';
+import { trackEvent } from '@/lib/analytics';
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -48,6 +49,11 @@ export default function ProductPage() {
     const primary = galleryImages[0] || product.image_url || '/placeholder.svg';
     setSelectedImage(primary);
   }, [product, galleryImages]);
+
+  useEffect(() => {
+    if (!product) return;
+    trackEvent('product_view', { productId: product.id });
+  }, [product?.id]);
 
   // Auto-select first available size when sizes load (stable deps to avoid re-running every render)
   useEffect(() => {

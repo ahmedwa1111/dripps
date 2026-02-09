@@ -1,7 +1,9 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
+import { VisaSalesCard } from '@/components/admin/VisaSalesCard';
+import { ConversionRateCard } from '@/components/admin/ConversionRateCard';
 import { useDashboardStats, useRecentOrders, useOrdersByStatus, useRevenueByMonth } from '@/hooks/useDashboard';
-import { DollarSign, ShoppingCart, Package, Users } from 'lucide-react';
+import { DollarSign, ShoppingCart, Package, Users, Eye } from 'lucide-react';
 import {
   formatCurrency,
   getFreeShippingThreshold,
@@ -75,7 +77,7 @@ export default function AdminDashboardPage() {
     <AdminLayout>
       <div className="space-y-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
           <StatCard
             title="Total Revenue"
             value={loadingStats ? '...' : formatCurrency(stats?.totalRevenue ?? 0)}
@@ -102,7 +104,16 @@ export default function AdminDashboardPage() {
             icon={Users}
             iconColor="text-blue-600"
           />
+          <StatCard
+            title="Visitors (30d)"
+            value={loadingStats ? '...' : stats?.totalVisitors || 0}
+            icon={Eye}
+            iconColor="text-amber-600"
+          />
+          <VisaSalesCard />
         </div>
+
+        <ConversionRateCard />
 
         {/* Shipping Settings */}
         <div className="bg-card rounded-xl border border-border p-6">

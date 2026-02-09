@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string | null
+          path: string | null
+          referrer: string | null
+          session_id: string
+          started_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          path?: string | null
+          referrer?: string | null
+          session_id: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          path?: string | null
+          referrer?: string | null
+          session_id?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          path: string | null
+          product_id: string | null
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          path?: string | null
+          product_id?: string | null
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          path?: string | null
+          product_id?: string | null
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -103,6 +183,11 @@ export type Database = {
           customer_name: string | null
           id: string
           notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string | null
+          total_amount_cents: number
+          transaction_id: string | null
           shipping_address: Json | null
           shipping_cost: number
           status: Database["public"]["Enums"]["order_status"]
@@ -118,6 +203,11 @@ export type Database = {
           customer_name?: string | null
           id?: string
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          total_amount_cents?: number
+          transaction_id?: string | null
           shipping_address?: Json | null
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
@@ -133,6 +223,11 @@ export type Database = {
           customer_name?: string | null
           id?: string
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          total_amount_cents?: number
+          transaction_id?: string | null
           shipping_address?: Json | null
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]

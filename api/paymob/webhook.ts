@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
+import { getSupabaseAdminClient } from "../_lib/supabase";
 
 const DEFAULT_HMAC_FIELD_ORDER = [
   // Adjust this list to match Paymob's exact transaction processed callback field order.
@@ -62,7 +63,7 @@ const getHmacFromRequest = (req: VercelRequest): string | undefined => {
   return undefined;
 };
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -91,5 +92,72 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   console.log("Paymob webhook payload:", JSON.stringify(payload));
-  res.status(200).json({ ok: true });
+
+  const obj = (payload.obj || {}) as Record<string, any>;
+  const success = obj.success === true || obj.success === "true";
+  const pending = obj.pending === true || obj.pending === "true";
+
+  if (!success || pending) {
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  const merchantOrderId =
+    obj?.order?.merchant_order_id ||
+    obj?.order?.merchant_order_id?.toString?.() ||
+    obj?.merchant_order_id ||
+    payload.merchant_order_id;
+
+  if (!merchantOrderId) {
+    res.status(400).json({ error: "Missing merchant_order_id" });
+    return;
+  }
+
+  const transactionId = obj.id ? String(obj.id) : undefined;
+  const amountCents = obj.amount_cents ? Number(obj.amount_cents) : undefined;
+
+  try {
+    const supabase = getSupabaseAdminClient();
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("id, payment_status, total_amount_cents")
+      .eq("id", merchantOrderId)
+      .maybeSingle();
+
+    if (error || !order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    if (order.payment_status === "paid") {
+      res.status(200).json({ ok: true, status: "already_paid" });
+      return;
+    }
+
+    const updatePayload: Record<string, any> = {
+      payment_method: "card",
+      payment_status: "paid",
+      transaction_id: transactionId ?? null,
+      paid_at: new Date().toISOString(),
+    };
+
+    if (amountCents && (!order.total_amount_cents || order.total_amount_cents === 0)) {
+      updatePayload.total_amount_cents = amountCents;
+    }
+
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update(updatePayload)
+      .eq("id", merchantOrderId);
+
+    if (updateError) {
+      res.status(500).json({ error: "Failed to update order payment" });
+      return;
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (updateErr) {
+    console.error("Paymob webhook update failed:", updateErr);
+    res.status(500).json({ error: "Failed to process webhook" });
+  }
 }

@@ -1,4 +1,7 @@
 const getApiBaseUrl = () => {
+  if (import.meta.env.DEV) {
+    return "";
+  }
   const base = import.meta.env.VITE_API_BASE_URL as string | undefined;
   return base ? base.replace(/\/$/, "") : "";
 };
@@ -59,4 +62,9 @@ export const openInvoicePdf = async (orderId: string, token?: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
   // Revoke after the new tab has a chance to load the blob URL.
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+};
+
+export const openInvoicePrintView = (orderId: string) => {
+  const url = `/order/${orderId}?print=1`;
+  window.open(url, "_blank", "noopener,noreferrer");
 };

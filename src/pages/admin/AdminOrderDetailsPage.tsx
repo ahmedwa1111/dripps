@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrder } from "@/hooks/useOrders";
 import { useQrDataUrl } from "@/hooks/useQrCode";
-import { downloadInvoicePdf, openInvoicePdf } from "@/lib/invoice";
+import { downloadInvoicePdf, openInvoicePdf, openInvoicePrintView } from "@/lib/invoice";
 import { OrderInvoiceDetails } from "@/components/orders/OrderInvoiceDetails";
 import { toast } from "sonner";
 
@@ -22,7 +22,8 @@ export default function AdminOrderDetailsPage() {
     try {
       await downloadInvoicePdf(id, session?.access_token);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to download invoice.");
+      openInvoicePrintView(id);
+      toast.error("PDF service unavailable. Opening print view instead.");
     }
   };
 
@@ -31,7 +32,8 @@ export default function AdminOrderDetailsPage() {
     try {
       await openInvoicePdf(id, session?.access_token);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to open invoice.");
+      openInvoicePrintView(id);
+      toast.error("PDF service unavailable. Opening print view instead.");
     }
   };
 

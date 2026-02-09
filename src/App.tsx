@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { AnalyticsSessionTracker } from "@/components/AnalyticsSessionTracker";
 
 // User pages
 import HomePage from "./pages/HomePage";
@@ -41,6 +42,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <AnalyticsSessionTracker />
               <ScrollToTop />
               <Routes>
                 {/* User Routes */}

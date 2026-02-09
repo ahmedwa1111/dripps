@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/CartContext';
@@ -12,6 +12,7 @@ import { Address } from '@/types';
 import { toast } from 'sonner';
 import { formatCurrency, getFreeShippingThreshold, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD, MAX_SHIPPING_COST } from '@/lib/utils';
 import type { CartItem } from '@/types';
+import { trackEvent } from '@/lib/analytics';
 
 function getShippingCost(
   items: CartItem[],
@@ -63,6 +64,11 @@ export default function CheckoutPage() {
     freeShippingThreshold
   );
   const total = subtotal + shippingCost;
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    trackEvent('checkout_start');
+  }, [items.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

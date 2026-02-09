@@ -438,3 +438,43 @@
     display: none;
   }
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-page {
+    padding: 0 !important;
+    margin: 0 auto !important;
+    max-width: 190mm;
+  }
+
+  .print-page .bg-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 12px !important;
+  }
+
+  .print-page .space-y-6 > * + * {
+    margin-top: 12px !important;
+  }
+
+  .print-page section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-page table {
+    font-size: 12px;
+  }
+}

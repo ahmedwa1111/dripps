@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, CartItem } from '@/types';
 import { toast } from 'sonner';
+import { trackEvent } from '@/lib/analytics';
 
 interface CartContextType {
   items: CartItem[];
@@ -31,6 +32,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = (product: Product, quantity = 1, size?: string, color?: string) => {
+    trackEvent('add_to_cart', { productId: product.id });
     setItems(prev => {
       // Find existing item with same product AND size
       const existingItem = prev.find(

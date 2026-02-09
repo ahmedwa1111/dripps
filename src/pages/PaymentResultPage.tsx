@@ -1,7 +1,9 @@
 import { Link, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Check, XCircle } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 export default function PaymentResultPage() {
   const [params] = useSearchParams();
@@ -9,6 +11,11 @@ export default function PaymentResultPage() {
   // Paymob usually returns success=true | false
   const successParam = params.get("success");
   const isSuccess = successParam === "true" || successParam === "1";
+
+  useEffect(() => {
+    if (!isSuccess) return;
+    trackEvent("purchase");
+  }, [isSuccess]);
 
   return (
     <MainLayout showFooter={false}>

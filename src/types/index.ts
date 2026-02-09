@@ -63,6 +63,11 @@ export interface Order {
   id: string;
   user_id: string | null;
   status: OrderStatus;
+  payment_method: string | null;
+  payment_status: string | null;
+  transaction_id: string | null;
+  paid_at: string | null;
+  total_amount_cents: number;
   total: number;
   subtotal: number;
   shipping_cost: number;
@@ -112,6 +117,7 @@ export interface DashboardStats {
   totalOrders: number;
   totalProducts: number;
   totalCustomers: number;
+  totalVisitors: number;
   revenueChange: number;
   ordersChange: number;
 }

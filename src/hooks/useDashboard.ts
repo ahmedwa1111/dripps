@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { subDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardStats } from '@/types';
 
@@ -31,6 +32,14 @@ export function useDashboardStats() {
       
       if (customersError) throw customersError;
 
+      const visitorsSince = subDays(new Date(), 29).toISOString();
+      const { count: visitorsCount, error: visitorsError } = await supabase
+        .from('analytics_sessions')
+        .select('*', { count: 'exact', head: true })
+        .gte('started_at', visitorsSince);
+
+      const totalVisitors = visitorsError ? 0 : visitorsCount || 0;
+
       // Calculate changes (mock for now - would need historical data)
       const revenueChange = 12.5;
       const ordersChange = 8.2;
@@ -40,6 +49,7 @@ export function useDashboardStats() {
         totalOrders,
         totalProducts: productsCount || 0,
         totalCustomers: customersCount || 0,
+        totalVisitors,
         revenueChange,
         ordersChange,
       };
