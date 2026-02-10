@@ -106,6 +106,10 @@ export function useCreateOrder() {
       customerName: string;
       notes?: string;
       paymentMethod?: "card" | "cod";
+      paymentStatus?: "paid" | "unpaid";
+      transactionId?: string | null;
+      paidAt?: string | null;
+      orderId?: string;
     }) => {
       const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -123,13 +127,20 @@ export function useCreateOrder() {
 
       // Create order
       const paymentMethod = orderData.paymentMethod ?? "card";
+      const paymentStatus = orderData.paymentStatus ?? "unpaid";
+      const paidAt =
+        orderData.paidAt ??
+        (paymentStatus === "paid" ? new Date().toISOString() : null);
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
+          id: orderData.orderId,
           user_id: user?.id ?? null,
           status: 'pending' as const,
           payment_method: paymentMethod,
-          payment_status: 'unpaid',
+          payment_status: paymentStatus,
+          transaction_id: orderData.transactionId ?? null,
+          paid_at: paidAt,
           subtotal,
           shipping_cost: shippingCost,
           total,

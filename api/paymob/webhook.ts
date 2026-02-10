@@ -117,6 +117,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const amountCents = obj.amount_cents ? Number(obj.amount_cents) : undefined;
 
   try {
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const serviceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      res.status(200).json({ ok: true, status: "supabase_not_configured" });
+      return;
+    }
+
     const supabase = getSupabaseAdminClient();
     const { data: order, error } = await supabase
       .from("orders")

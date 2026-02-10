@@ -6,6 +6,10 @@ const getApiBaseUrl = () => {
   return base ? base.replace(/\/$/, "") : "";
 };
 
+const INVOICE_MODE =
+  (import.meta.env.VITE_INVOICE_MODE as string | undefined) || "print";
+const USE_API = INVOICE_MODE === "api";
+
 export const buildInvoiceUrl = (orderId: string, inline?: boolean) => {
   const query = inline ? "?inline=1" : "";
   const base = getApiBaseUrl();
@@ -20,6 +24,9 @@ export const fetchInvoicePdf = async (
   token?: string,
   inline?: boolean
 ) => {
+  if (!USE_API) {
+    throw new Error("Invoice API disabled");
+  }
   const response = await fetch(buildInvoiceUrl(orderId, inline), {
     headers: {
       ...getAuthHeaders(token),
@@ -45,6 +52,10 @@ export const fetchInvoicePdf = async (
 };
 
 export const downloadInvoicePdf = async (orderId: string, token?: string) => {
+  if (!USE_API) {
+    openInvoicePrintView(orderId);
+    return;
+  }
   const blob = await fetchInvoicePdf(orderId, token);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -57,6 +68,10 @@ export const downloadInvoicePdf = async (orderId: string, token?: string) => {
 };
 
 export const openInvoicePdf = async (orderId: string, token?: string) => {
+  if (!USE_API) {
+    openInvoicePrintView(orderId);
+    return;
+  }
   const blob = await fetchInvoicePdf(orderId, token, true);
   const url = URL.createObjectURL(blob);
   window.open(url, "_blank", "noopener,noreferrer");

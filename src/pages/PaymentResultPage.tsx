@@ -1,12 +1,19 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Check, XCircle } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { useCreateOrder } from "@/hooks/useOrders";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 export default function PaymentResultPage() {
   const [params] = useSearchParams();
+  const createOrder = useCreateOrder();
+  const { items } = useCart();
+  const [orderCreated, setOrderCreated] = useState(false);
+  const hasSubmitted = useRef(false);
 
   // Paymob usually returns success=true | false
   const successParam = params.get("success");
@@ -16,6 +23,54 @@ export default function PaymentResultPage() {
     if (!isSuccess) return;
     trackEvent("purchase");
   }, [isSuccess]);
+
+  useEffect(() => {
+    if (!isSuccess || hasSubmitted.current) return;
+    const pendingRaw = window.localStorage.getItem("drippss_pending_payment");
+    if (!pendingRaw) return;
+    if (items.length === 0) {
+      toast.error("Cart is empty. Unable to create the order.");
+      return;
+    }
+
+    const transactionId =
+      params.get("id") ||
+      params.get("transaction_id") ||
+      params.get("txn_id") ||
+      params.get("transaction_id");
+
+    const pending = JSON.parse(pendingRaw) as {
+      orderId: string;
+      customerEmail: string;
+      customerName: string;
+      shippingAddress: any;
+      billingAddress: any;
+    };
+
+    hasSubmitted.current = true;
+
+    createOrder
+      .mutateAsync({
+        shippingAddress: pending.shippingAddress,
+        billingAddress: pending.billingAddress,
+        customerEmail: pending.customerEmail,
+        customerName: pending.customerName,
+        paymentMethod: "card",
+        paymentStatus: "paid",
+        transactionId: transactionId ?? null,
+        paidAt: new Date().toISOString(),
+        orderId: pending.orderId,
+      })
+      .then(() => {
+        window.localStorage.removeItem("drippss_pending_payment");
+        setOrderCreated(true);
+      })
+      .catch((error) => {
+        console.error("Failed to create order after payment:", error);
+        hasSubmitted.current = false;
+        toast.error("Payment succeeded but order creation failed. Please contact support.");
+      });
+  }, [isSuccess, items.length, params, createOrder]);
 
   return (
     <MainLayout showFooter={false}>
@@ -39,7 +94,9 @@ export default function PaymentResultPage() {
 
           <p className="text-muted-foreground mb-8">
             {isSuccess
-              ? "Your payment was completed successfully."
+              ? orderCreated
+                ? "Your payment was completed successfully."
+                : "Payment successful. Finalizing your order..."
               : "Your payment could not be completed. Please try again."}
           </p>
 

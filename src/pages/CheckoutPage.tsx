@@ -118,12 +118,40 @@ export default function CheckoutPage() {
         unit_price: item.product.price,
         total_price: item.product.price * item.quantity,
       }));
+      const orderId =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `order_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const pendingPayload = {
+        orderId,
+        customerEmail: customerInfo.email,
+        customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        shippingAddress: {
+          ...shippingAddress,
+          firstName: shippingAddress.firstName || customerInfo.firstName,
+          lastName: shippingAddress.lastName || customerInfo.lastName,
+          country: 'EG',
+        },
+        billingAddress: {
+          ...shippingAddress,
+          firstName: shippingAddress.firstName || customerInfo.firstName,
+          lastName: shippingAddress.lastName || customerInfo.lastName,
+          country: 'EG',
+        },
+        subtotal,
+        shippingCost,
+        total,
+        totalAmountCents: amountCents,
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('drippss_pending_payment', JSON.stringify(pendingPayload));
 
       const resp = await fetch('/api/paymob/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountCents,
+          merchantOrderId: orderId,
           billingData: {
             first_name: customerInfo.firstName || shippingAddress.firstName || 'Customer',
             last_name: customerInfo.lastName || shippingAddress.lastName || 'Name',
@@ -179,6 +207,7 @@ export default function CheckoutPage() {
           typeof data?.error === 'string' && data.error.length > 0
             ? data.error
             : 'Payment setup failed';
+        localStorage.removeItem('drippss_pending_payment');
         throw new Error(message);
       }
 
@@ -190,6 +219,7 @@ export default function CheckoutPage() {
         error instanceof Error && error.message
           ? error.message
           : 'Checkout failed. Please try again.';
+      localStorage.removeItem('drippss_pending_payment');
       toast.error(message);
     } finally {
       setIsSubmitting(false);
