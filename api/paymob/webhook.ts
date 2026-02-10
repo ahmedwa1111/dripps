@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
-import { getSupabaseAdminClient } from "../_lib/supabase";
+import { getSupabaseAdminClient } from "../_lib/supabase.js";
 
 const DEFAULT_HMAC_FIELD_ORDER = [
   // Adjust this list to match Paymob's exact transaction processed callback field order.

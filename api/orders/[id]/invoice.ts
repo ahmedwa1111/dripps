@@ -2,10 +2,10 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
 import QRCode from "qrcode";
 import nodemailer from "nodemailer";
-import { getSupabaseAdminClient } from "../../_lib/supabase";
-import { resolveLogoDataUrl } from "../../_lib/assets";
-import { renderInvoicePdf } from "../../_lib/invoice-pdf";
-import type { InvoiceTemplateData } from "../../_lib/invoice-template";
+import { getSupabaseAdminClient } from "../../_lib/supabase.js";
+import { resolveLogoDataUrl } from "../../_lib/assets.js";
+import { renderInvoicePdf } from "../../_lib/invoice-pdf.js";
+import type { InvoiceTemplateData } from "../../_lib/invoice-template.js";
 
 type Address = {
   firstName?: string;
@@ -41,9 +41,10 @@ type OrderItemRow = {
 
 const app = express();
 
-const isTruthy = (value?: string | string[]) => {
-  if (!value) return false;
+const isTruthy = (value?: unknown) => {
+  if (value === undefined || value === null) return false;
   const normalized = Array.isArray(value) ? value[0] : value;
+  if (typeof normalized !== "string") return false;
   return ["1", "true", "yes"].includes(normalized.toLowerCase());
 };
 

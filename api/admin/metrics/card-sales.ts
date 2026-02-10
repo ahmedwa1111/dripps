@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
-import { getSupabaseAdminClient } from "../../_lib/supabase";
+import { getSupabaseAdminClient } from "../../_lib/supabase.js";
 import {
   summarizeCardSales,
   toDateKey,
   type CardSalesRow,
-} from "../../_lib/metrics/card-sales";
+} from "../../_lib/metrics/card-sales.js";
 
 const app = express();
 

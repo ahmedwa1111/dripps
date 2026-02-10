@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
-import { getSupabaseAdminClient } from "../_lib/supabase";
+import { getSupabaseAdminClient } from "../_lib/supabase.js";
 
 const PAYMOB_BASE_URL = "https://accept.paymob.com/api";
 

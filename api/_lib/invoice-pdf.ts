@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
-import { buildInvoiceHtml, type InvoiceTemplateData } from "./invoice-template";
+import { buildInvoiceHtml, type InvoiceTemplateData } from "./invoice-template.js";
 
 const DEFAULT_PDF_OPTIONS = {
   format: "A4" as const,
@@ -40,7 +40,7 @@ export async function renderInvoicePdf(
     args: isServerless ? chromium.args : ["--no-sandbox", "--disable-setuid-sandbox"],
     defaultViewport: isServerless ? chromium.defaultViewport : undefined,
     executablePath,
-    headless: isServerless ? chromium.headless : "new",
+    headless: isServerless ? chromium.headless : true,
   });
 
   try {
