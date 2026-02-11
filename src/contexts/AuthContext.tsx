@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { AppRole, EmployeeAccount } from '@/types';
+import { AppRole } from '@/types';
 
 interface AuthContextType {
   user: User | null;
@@ -10,11 +10,6 @@ interface AuthContextType {
   roles: AppRole[];
   isAdmin: boolean;
   isStaff: boolean;
-  isModerator: boolean;
-  employeeAccount: EmployeeAccount | null;
-  employeeRoles: Array<{ id: string; name: string }>;
-  permissions: string[];
-  hasPermission: (permission: string) => boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -27,23 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  const [employeeAccount, setEmployeeAccount] = useState<EmployeeAccount | null>(null);
-  const [employeeRoles, setEmployeeRoles] = useState<Array<{ id: string; name: string }>>([]);
-  const [permissions, setPermissions] = useState<string[]>([]);
 
-  const isAdmin =
-    roles.includes('admin') ||
-    roles.includes('manager') ||
-    employeeRoles.some((role) => role.name === 'admin') ||
-    permissions.includes('settings.manage') ||
-    permissions.includes('employees.manage');
-  const isStaff = isAdmin;
-  const isModerator = !!employeeAccount;
-
-  const hasPermission = (permission: string) => {
-    if (isAdmin) return true;
-    return permissions.includes(permission);
-  };
+  const isAdmin = roles.includes('admin');
+  const isStaff = roles.includes('admin') || roles.includes('manager');
 
   const fetchUserRoles = async (userId: string) => {
     const { data, error } = await supabase
@@ -59,35 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.map(r => r.role as AppRole);
   };
 
-  const fetchEmployeeProfile = async (accessToken: string) => {
-    try {
-      const resp = await fetch('/api/moderator/me', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        if (resp.status === 403 && data?.error === 'Account disabled') {
-          await supabase.auth.signOut();
-        }
-        setEmployeeAccount(null);
-        setEmployeeRoles([]);
-        setPermissions([]);
-        return;
-      }
-
-      const data = await resp.json();
-      setEmployeeAccount(data.account ?? null);
-      setEmployeeRoles(data.roles ?? []);
-      setPermissions(data.permissions ?? []);
-    } catch {
-      setEmployeeAccount(null);
-      setEmployeeRoles([]);
-      setPermissions([]);
-    }
-  };
-
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -99,15 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(async () => {
           const userRoles = await fetchUserRoles(session.user.id);
           setRoles(userRoles);
-          if (session.access_token) {
-            await fetchEmployeeProfile(session.access_token);
-          }
         }, 0);
       } else {
         setRoles([]);
-        setEmployeeAccount(null);
-        setEmployeeRoles([]);
-        setPermissions([]);
       }
 
       setLoading(false);
@@ -121,9 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         const userRoles = await fetchUserRoles(session.user.id);
         setRoles(userRoles);
-        if (session.access_token) {
-          await fetchEmployeeProfile(session.access_token);
-        }
       }
 
       setLoading(false);
@@ -159,28 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
-    setEmployeeAccount(null);
-    setEmployeeRoles([]);
-    setPermissions([]);
   };
 
   return (
-      <AuthContext.Provider value={{
-        user,
-        session,
-        loading,
-        roles,
-        isAdmin,
-        isStaff,
-        isModerator,
-        employeeAccount,
-        employeeRoles,
-        permissions,
-        hasPermission,
-        signUp,
-        signIn,
-        signOut,
-      }}>
+    <AuthContext.Provider value={{
+      user,
+      session,
+      loading,
+      roles,
+      isAdmin,
+      isStaff,
+      signUp,
+      signIn,
+      signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );

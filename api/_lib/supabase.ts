@@ -19,25 +19,3 @@ export const getSupabaseAdminClient = () => {
     },
   });
 };
-
-// Public Supabase client for auth flows (anon key required).
-export const getSupabaseAnonClient = () => {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const anonKey =
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!supabaseUrl || !anonKey) {
-    throw new Error(
-      "Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_ANON_KEY for auth service."
-    );
-  }
-
-  return createClient(supabaseUrl, anonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-};

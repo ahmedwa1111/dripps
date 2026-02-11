@@ -8,7 +8,6 @@ export function useProducts(options?: {
   featured?: boolean; 
   search?: string;
   includeInactive?: boolean;
-  enabled?: boolean;
 }) {
   return useQuery({
     queryKey: ['products', options],
@@ -50,7 +49,6 @@ export function useProducts(options?: {
       if (error) throw error;
       return data as Product[];
     },
-    enabled: options?.enabled ?? true,
   });
 }
 

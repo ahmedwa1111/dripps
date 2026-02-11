@@ -1,7 +1,4 @@
 export type AppRole = 'admin' | 'manager' | 'customer';
-export type EmployeeAccountStatus = 'active' | 'disabled';
-export type PayrollStatus = 'paid' | 'unpaid';
-export type PayrollPaymentMethod = 'cash' | 'bank' | 'wallet';
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -123,52 +120,4 @@ export interface DashboardStats {
   totalVisitors: number;
   revenueChange: number;
   ordersChange: number;
-}
-
-export interface Employee {
-  id: string;
-  full_name: string;
-  job_title: string;
-  base_salary_cents: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface EmployeeAccount {
-  id: string;
-  employee_id: string;
-  email: string;
-  status: EmployeeAccountStatus;
-  last_login_at: string | null;
-  created_at: string;
-  updated_at: string;
-  employee?: Employee | null;
-}
-
-export interface Role {
-  id: string;
-  name: string;
-  description?: string | null;
-}
-
-export interface Permission {
-  id: string;
-  key: string;
-  description?: string | null;
-}
-
-export interface PayrollRecord {
-  id: string;
-  employee_id: string;
-  period_year: number;
-  period_month: number;
-  salary_cents: number;
-  status: PayrollStatus;
-  paid_at: string | null;
-  payment_method: PayrollPaymentMethod | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  employee?: Employee | null;
 }

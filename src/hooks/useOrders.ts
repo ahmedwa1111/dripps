@@ -20,12 +20,7 @@ const transformOrder = (dbOrder: any): Order => ({
 });
 
 export function useOrders(options?: { status?: OrderStatus; userId?: string }) {
-  const { isStaff, hasPermission } = useAuth();
-  const canReadOrders =
-    isStaff ||
-    hasPermission('orders.read') ||
-    hasPermission('orders.review') ||
-    hasPermission('orders.process');
+  const { isStaff } = useAuth();
 
   return useQuery({
     queryKey: ['orders', options],
@@ -48,7 +43,7 @@ export function useOrders(options?: { status?: OrderStatus; userId?: string }) {
       if (error) throw error;
       return (data || []).map(transformOrder);
     },
-    enabled: canReadOrders || !!options?.userId,
+    enabled: isStaff || !!options?.userId,
   });
 }
 

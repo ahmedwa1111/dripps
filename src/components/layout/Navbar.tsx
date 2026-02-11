@@ -12,7 +12,7 @@ import logo from '@/assets/logo.png';
 export function Navbar() {
   const { itemCount } = useCart();
   const { favoritesCount } = useFavorites();
-  const { user, isAdmin, isModerator, signOut } = useAuth();
+  const { user, isStaff, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -76,17 +76,10 @@ export function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2">
-              {isAdmin && (
+              {isStaff && (
                 <Link to="/admin">
                   <Button variant="ghost" size="sm">
-                    Admin
-                  </Button>
-                </Link>
-              )}
-              {isModerator && (
-                <Link to="/moderator">
-                  <Button variant="ghost" size="sm">
-                    Moderator
+                    Dashboard
                   </Button>
                 </Link>
               )}
@@ -189,17 +182,10 @@ export function Navbar() {
           <div className="pt-4 border-t border-gray-200 space-y-2">
             {user ? (
               <>
-                {isAdmin && (
+                {isStaff && (
                   <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-                {isModerator && (
-                  <Link to="/moderator" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Moderator
+                      Dashboard
                     </Button>
                   </Link>
                 )}

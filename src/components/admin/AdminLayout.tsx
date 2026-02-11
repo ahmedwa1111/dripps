@@ -7,8 +7,7 @@ import {
   ShoppingCart,
   Users,
   FolderTree,
-  Wallet,
-  ShieldCheck,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -28,13 +27,10 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { href: '/admin/employees', label: 'Employees', icon: Users },
-  { href: '/admin/payroll', label: 'Payroll', icon: Wallet },
-  { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, isStaff, loading, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeNavItem = navItems.find((item) =>
@@ -54,7 +50,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isStaff) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
