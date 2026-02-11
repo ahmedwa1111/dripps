@@ -66,6 +66,7 @@ export default function CheckoutPage() {
     freeShippingThreshold
   );
   const total = subtotal + shippingCost;
+  const requiresAuthForCard = paymentMethod === 'card' && !user;
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -77,6 +78,12 @@ export default function CheckoutPage() {
 
     if (items.length === 0) {
       toast.error('Your cart is empty');
+      return;
+    }
+
+    if (paymentMethod === 'card' && !user) {
+      toast.error('Please sign in to pay by card.');
+      navigate('/login', { state: { from: { pathname: '/checkout' } } });
       return;
     }
 
@@ -424,6 +431,18 @@ export default function CheckoutPage() {
                     </div>
                   </label>
                 </RadioGroup>
+                {requiresAuthForCard && (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Card payments require an account. Please sign in or create one to continue.
+                    <div className="mt-2">
+                      <Link to="/login" state={{ from: { pathname: '/checkout' } }}>
+                        <Button type="button" variant="outline" size="sm">
+                          Sign In / Create Account
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
                 {paymentMethod === 'card' && (
                   <div className="bg-muted rounded-lg p-4 flex items-start gap-3 mt-4">
                     <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -499,8 +518,16 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="lg"
+                  className="w-full"
+                  disabled={isSubmitting || requiresAuthForCard}
+                >
+                  {requiresAuthForCard
+                    ? 'Sign in to pay by card'
+                    : isSubmitting
                     ? paymentMethod === 'card'
                       ? 'Redirecting...'
                       : 'Placing order...'

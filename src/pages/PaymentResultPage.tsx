@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 export default function PaymentResultPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const createOrder = useCreateOrder();
   const { items } = useCart();
   const [orderCreated, setOrderCreated] = useState(false);
@@ -61,13 +62,22 @@ export default function PaymentResultPage() {
         paidAt: new Date().toISOString(),
         orderId: pending.orderId,
       })
-      .then(() => {
+      .then((created) => {
         window.localStorage.removeItem("drippss_pending_payment");
         setOrderCreated(true);
+        const targetId = created?.id || pending.orderId;
+        if (targetId) {
+          navigate(`/order/${targetId}`, { replace: true });
+        }
       })
       .catch((error) => {
         console.error("Failed to create order after payment:", error);
         hasSubmitted.current = false;
+        if (pending.orderId) {
+          toast.message("Payment succeeded. Opening your order details...");
+          navigate(`/order/${pending.orderId}`, { replace: true });
+          return;
+        }
         toast.error("Payment succeeded but order creation failed. Please contact support.");
       });
   }, [isSuccess, items.length, params, createOrder]);
