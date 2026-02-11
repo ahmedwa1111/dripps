@@ -1,5 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requirePermission } from "../_lib/rbac.js";
+import { requireEmployee, requirePermission, listAccountPermissions, listAccountRoles } from "../_lib/rbac.js";
+
+const getSegments = (req: VercelRequest) => {
+  const slug = req.query.slug;
+  if (!slug) return [];
+  return Array.isArray(slug) ? slug : [slug];
+};
 
 const parseNumber = (value?: string | string[]) => {
   if (!value) return null;
@@ -8,7 +14,36 @@ const parseNumber = (value?: string | string[]) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+const handleMe = async (req: VercelRequest, res: VercelResponse) => {
+  if (req.method !== "GET") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const auth = await requireEmployee(req as any, res as any);
+  if (!auth) return;
+
+  const { supabase, account } = auth;
+  if (!account) {
+    res.status(403).json({ error: "Employee account required" });
+    return;
+  }
+
+  try {
+    const roles = await listAccountRoles(supabase, account.id);
+    const permissions = await listAccountPermissions(supabase, account.id);
+
+    res.status(200).json({
+      account,
+      roles,
+      permissions,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error?.message || "Failed to load profile" });
+  }
+};
+
+const handlePayroll = async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -50,4 +85,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   res.status(200).json({ payroll: data || [] });
+};
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const segments = getSegments(req);
+  if (segments.length === 0) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  if (segments[0] === "me") {
+    await handleMe(req, res);
+    return;
+  }
+
+  if (segments[0] === "payroll") {
+    await handlePayroll(req, res);
+    return;
+  }
+
+  res.status(404).json({ error: "Not found" });
 }

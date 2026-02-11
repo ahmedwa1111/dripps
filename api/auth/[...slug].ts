@@ -8,7 +8,13 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+const getSegments = (req: VercelRequest) => {
+  const slug = req.query.slug;
+  if (!slug) return [];
+  return Array.isArray(slug) ? slug : [slug];
+};
+
+const handleLogin = async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -80,4 +86,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     res.status(500).json({ error: error?.message || "Login failed" });
   }
+};
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const segments = getSegments(req);
+  if (segments.length === 0) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  if (segments[0] === "login") {
+    await handleLogin(req, res);
+    return;
+  }
+
+  res.status(404).json({ error: "Not found" });
 }
