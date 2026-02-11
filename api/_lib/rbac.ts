@@ -56,7 +56,26 @@ const fetchEmployeeAccount = async (
   if (error) {
     throw new Error("Failed to load employee account");
   }
-  return data as EmployeeAccountRecord | null;
+  if (!data) return null;
+  const row = data as any;
+  const employeeData = row.employee as any;
+  const employee = Array.isArray(employeeData) ? employeeData[0] : employeeData;
+  return {
+    id: row.id,
+    employee_id: row.employee_id,
+    email: row.email,
+    status: row.status,
+    last_login_at: row.last_login_at ?? null,
+    employee: employee
+      ? {
+          id: employee.id,
+          full_name: employee.full_name,
+          job_title: employee.job_title,
+          base_salary_cents: employee.base_salary_cents,
+          is_active: employee.is_active,
+        }
+      : null,
+  } satisfies EmployeeAccountRecord;
 };
 
 export const listAccountRoles = async (
@@ -71,7 +90,16 @@ export const listAccountRoles = async (
     throw new Error("Failed to load account roles");
   }
   return (data || [])
-    .map((row) => row.role)
+    .map((row) => {
+      const roleData = (row as any).role as unknown;
+      const role = Array.isArray(roleData) ? roleData[0] : roleData;
+      if (!role) return null;
+      return {
+        id: role.id,
+        name: role.name,
+        description: role.description ?? null,
+      };
+    })
     .filter(Boolean) as Array<{ id: string; name: string; description: string | null }>;
 };
 
