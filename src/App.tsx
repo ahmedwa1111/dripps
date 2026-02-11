@@ -30,6 +30,10 @@ import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 import AdminOrderDetailsPage from "./pages/admin/AdminOrderDetailsPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
+import AdminEmployeesPage from "./pages/admin/AdminEmployeesPage";
+import AdminPayrollPage from "./pages/admin/AdminPayrollPage";
+import AdminRolesPage from "./pages/admin/AdminRolesPage";
+import ModeratorPage from "./pages/ModeratorPage";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +69,12 @@ const App = () => (
                 <Route path="/admin/orders" element={<AdminOrdersPage />} />
                 <Route path="/admin/orders/:id" element={<AdminOrderDetailsPage />} />
                 <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+                <Route path="/admin/employees" element={<AdminEmployeesPage />} />
+                <Route path="/admin/payroll" element={<AdminPayrollPage />} />
+                <Route path="/admin/roles" element={<AdminRolesPage />} />
+
+                {/* Moderator Routes */}
+                <Route path="/moderator" element={<ModeratorPage />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

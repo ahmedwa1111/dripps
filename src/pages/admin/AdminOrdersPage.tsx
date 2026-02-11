@@ -202,6 +202,7 @@ export default function AdminOrdersPage() {
                 <TableHead>Order ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="w-[70px]"></TableHead>
@@ -210,13 +211,13 @@ export default function AdminOrdersPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No orders found
                   </TableCell>
                 </TableRow>
@@ -245,6 +246,20 @@ export default function AdminOrdersPage() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Confirmed by: {extractConfirmedBy(order.notes)}
                         </p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">
+                        {order.payment_method === 'card'
+                          ? 'VISA'
+                          : order.payment_method === 'cod'
+                          ? 'Cash on Delivery'
+                          : '—'}
+                      </div>
+                      {order.payment_status && (
+                        <div className="text-xs text-muted-foreground">
+                          {order.payment_status.toUpperCase()}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">

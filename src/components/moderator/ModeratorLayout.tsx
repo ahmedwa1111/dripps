@@ -1,47 +1,21 @@
-import { ReactNode } from 'react';
-import { Link, useLocation, Navigate } from 'react-router-dom';
+import { ReactNode, useMemo, useState } from 'react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Users,
-  FolderTree,
-  Wallet,
-  ShieldCheck,
-  LogOut,
-  Menu,
-  X,
-  Home,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { buildModeratorNav } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { Home, LogOut, Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
-interface AdminLayoutProps {
+interface ModeratorLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/products', label: 'Products', icon: Package },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-  { href: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { href: '/admin/employees', label: 'Employees', icon: Users },
-  { href: '/admin/payroll', label: 'Payroll', icon: Wallet },
-  { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
-];
-
-export function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, isAdmin, loading, signOut } = useAuth();
+export function ModeratorLayout({ children }: ModeratorLayoutProps) {
+  const { user, loading, permissions, signOut, isModerator } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const activeNavItem = navItems.find((item) =>
-    item.href === '/admin'
-      ? location.pathname === item.href
-      : location.pathname.startsWith(item.href)
-  );
+
+  const navItems = useMemo(() => buildModeratorNav(permissions), [permissions]);
 
   if (loading) {
     return (
@@ -54,13 +28,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isModerator) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return (
     <div className="flex min-h-screen bg-muted">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-foreground/50 lg:hidden"
@@ -68,7 +41,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           'fixed inset-y-0 left-0 z-50 w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transform transition-transform duration-300 lg:translate-x-0 lg:static',
@@ -76,12 +48,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
-            <Link to="/admin" className="flex items-center gap-2">
+            <Link to="/moderator" className="flex items-center gap-2">
               <img src={logo} alt="DRIPPSS" className="h-8 w-auto" />
-              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
-                Admin
+              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
+                Moderator
               </span>
             </Link>
             <button
@@ -92,17 +63,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </button>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {navItems.map((item) => {
               const isActive =
-                item.href === '/admin'
-                  ? location.pathname === item.href
-                  : location.pathname.startsWith(item.href);
+                item.href === '#overview'
+                  ? location.hash === '' || location.hash === '#overview'
+                  : location.hash === item.href;
               return (
-                <Link
+                <a
                   key={item.href}
-                  to={item.href}
+                  href={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
@@ -113,12 +83,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   <item.icon className="h-5 w-5" />
                   {item.label}
-                </Link>
+                </a>
               );
             })}
           </nav>
 
-          {/* Footer */}
           <div className="p-4 border-t border-sidebar-border space-y-1">
             <Link
               to="/"
@@ -138,9 +107,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
         <header className="sticky top-0 z-30 h-16 bg-background border-b border-border flex items-center px-4 lg:px-8">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -149,9 +116,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1">
-            <h1 className="font-display text-lg font-semibold">
-              {activeNavItem?.label || 'Dashboard'}
-            </h1>
+            <h1 className="font-display text-lg font-semibold">Moderator</h1>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden sm:block">
@@ -160,10 +125,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-8">
-          {children}
-        </main>
+        <main className="flex-1 p-4 lg:p-8">{children}</main>
       </div>
     </div>
   );
