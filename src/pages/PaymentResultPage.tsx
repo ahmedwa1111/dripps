@@ -15,10 +15,15 @@ export default function PaymentResultPage() {
   const { items } = useCart();
   const [orderCreated, setOrderCreated] = useState(false);
   const hasSubmitted = useRef(false);
+  const hasRedirected = useRef(false);
 
   // Paymob usually returns success=true | false
   const successParam = params.get("success");
   const isSuccess = successParam === "true" || successParam === "1";
+  const orderIdParam =
+    params.get("order_id") ||
+    params.get("merchant_order_id") ||
+    params.get("order");
 
   useEffect(() => {
     if (!isSuccess) return;
@@ -81,6 +86,15 @@ export default function PaymentResultPage() {
         toast.error("Payment succeeded but order creation failed. Please contact support.");
       });
   }, [isSuccess, items.length, params, createOrder]);
+
+  useEffect(() => {
+    if (!isSuccess || hasRedirected.current) return;
+    const pendingRaw = window.localStorage.getItem("drippss_pending_payment");
+    if (pendingRaw) return;
+    if (!orderIdParam) return;
+    hasRedirected.current = true;
+    navigate(`/order/${orderIdParam}`, { replace: true });
+  }, [isSuccess, navigate, orderIdParam]);
 
   return (
     <MainLayout showFooter={false}>
