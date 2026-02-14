@@ -160,6 +160,14 @@ export function OrderInvoiceDetails({ order }: { order: Order }) {
             <span className="text-muted-foreground">Shipping</span>
             <span>{formatCurrency(Number(order.shipping_cost))}</span>
           </div>
+          {Number(order.discount_amount || 0) > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>
+                Discount {order.coupon_code ? `(${order.coupon_code})` : ''}
+              </span>
+              <span>-{formatCurrency(Number(order.discount_amount || 0))}</span>
+            </div>
+          )}
           <div className="flex justify-between text-lg font-semibold">
             <span>Total</span>
             <span>{formatCurrency(Number(order.total))}</span>

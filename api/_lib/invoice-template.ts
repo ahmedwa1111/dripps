@@ -17,6 +17,8 @@ export type InvoiceTemplateData = {
   items: InvoiceItem[];
   subtotal: number;
   shippingFee: number;
+  discount?: number;
+  couponCode?: string | null;
   total: number;
   qrDataUrl: string;
   orderUrl: string;
@@ -64,6 +66,8 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     items,
     subtotal,
     shippingFee,
+    discount,
+    couponCode,
     total,
     qrDataUrl,
     orderUrl,
@@ -76,6 +80,17 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   const logoMarkup = logoDataUrl
     ? `<img class="logo" src="${logoDataUrl}" alt="${escapeHtml(brandName)} logo" />`
     : `<div class="logo-placeholder">${escapeHtml(brandName)}</div>`;
+
+  const discountLabel = couponCode ? `Discount (${couponCode})` : "Discount";
+  const discountRow =
+    typeof discount === "number" && discount > 0
+      ? `
+                <div class="summary-row discount">
+                  <span>${escapeHtml(discountLabel)}</span>
+                  <span>-${formatCurrency(discount)}</span>
+                </div>
+              `
+      : "";
 
   return `
     <!DOCTYPE html>
@@ -243,6 +258,9 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
             padding-top: 10px;
             margin-top: 10px;
           }
+          .summary-row.discount {
+            color: #16a34a;
+          }
           .qr-card {
             display: flex;
             align-items: center;
@@ -329,6 +347,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
                   <span>Shipping</span>
                   <span>${formatCurrency(shippingFee)}</span>
                 </div>
+                ${discountRow}
                 <div class="summary-row total">
                   <span>Total</span>
                   <span>${formatCurrency(total)}</span>

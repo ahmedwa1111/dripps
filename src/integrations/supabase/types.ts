@@ -124,6 +124,96 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          applicable_category_ids: string[] | null
+          applicable_product_ids: string[] | null
+          apply_to_all: boolean
+          code: string
+          created_at: string
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_discount_amount: number | null
+          min_order_amount: number | null
+          starts_at: string | null
+          type: Database["public"]["Enums"]["coupon_type"]
+          updated_at: string
+          usage_limit_per_user: number | null
+          usage_limit_total: number | null
+          used_count: number
+          value: number
+        }
+        Insert: {
+          applicable_category_ids?: string[] | null
+          applicable_product_ids?: string[] | null
+          apply_to_all?: boolean
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          min_order_amount?: number | null
+          starts_at?: string | null
+          type: Database["public"]["Enums"]["coupon_type"]
+          updated_at?: string
+          usage_limit_per_user?: number | null
+          usage_limit_total?: number | null
+          used_count?: number
+          value: number
+        }
+        Update: {
+          applicable_category_ids?: string[] | null
+          applicable_product_ids?: string[] | null
+          apply_to_all?: boolean
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          min_order_amount?: number | null
+          starts_at?: string | null
+          type?: Database["public"]["Enums"]["coupon_type"]
+          updated_at?: string
+          usage_limit_per_user?: number | null
+          usage_limit_total?: number | null
+          used_count?: number
+          value?: number
+        }
+        Relationships: []
+      }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          discount_amount: number
+          id: string
+          order_id: string
+          user_id: string | null
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id: string
+          user_id?: string | null
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -178,9 +268,12 @@ export type Database = {
       orders: {
         Row: {
           billing_address: Json | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           customer_email: string | null
           customer_name: string | null
+          discount_amount: number
           id: string
           notes: string | null
           paid_at: string | null
@@ -198,9 +291,12 @@ export type Database = {
         }
         Insert: {
           billing_address?: Json | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
+          discount_amount?: number
           id?: string
           notes?: string | null
           paid_at?: string | null
@@ -218,9 +314,12 @@ export type Database = {
         }
         Update: {
           billing_address?: Json | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
+          discount_amount?: number
           id?: string
           notes?: string | null
           paid_at?: string | null
@@ -242,10 +341,13 @@ export type Database = {
         Row: {
           billing_address: Json | null
           consumed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           currency: string | null
           customer_email: string | null
           customer_name: string | null
+          discount_amount: number
           id: string
           notes: string | null
           order_items: Json
@@ -263,10 +365,13 @@ export type Database = {
         Insert: {
           billing_address?: Json | null
           consumed_at?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          discount_amount?: number
           id: string
           notes?: string | null
           order_items?: Json
@@ -284,10 +389,13 @@ export type Database = {
         Update: {
           billing_address?: Json | null
           consumed_at?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          discount_amount?: number
           id?: string
           notes?: string | null
           order_items?: Json
@@ -433,6 +541,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "manager" | "customer"
+      coupon_type: "percentage" | "fixed"
       order_status:
         | "pending"
         | "processing"

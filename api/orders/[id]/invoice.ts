@@ -24,6 +24,8 @@ type OrderRow = {
   status: string;
   subtotal: number;
   shipping_cost: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
   total: number;
   customer_name: string | null;
   customer_email: string | null;
@@ -253,6 +255,8 @@ app.get(["/api/orders/:id/invoice", "/:id/invoice"], async (req, res) => {
       })),
       subtotal: Number(orderRow.subtotal),
       shippingFee: Number(orderRow.shipping_cost),
+      discount: Number(orderRow.discount_amount || 0),
+      couponCode: orderRow.coupon_code ?? null,
       total: Number(orderRow.total),
       qrDataUrl,
       orderUrl,

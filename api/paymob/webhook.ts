@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const supabase = getSupabaseAdminClient();
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, payment_status, total_amount_cents")
+      .select("id, payment_status, total_amount_cents, coupon_id, coupon_code, discount_amount, user_id")
       .eq("id", merchantOrderId)
       .maybeSingle();
 
@@ -159,6 +159,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
+      if (order.coupon_id && Number(order.discount_amount || 0) > 0) {
+        const { data: redemption } = await supabase
+          .from("coupon_redemptions")
+          .select("id")
+          .eq("coupon_id", order.coupon_id)
+          .eq("order_id", order.id)
+          .maybeSingle();
+
+        if (!redemption) {
+          const { error: redemptionError } = await supabase
+            .from("coupon_redemptions")
+            .insert({
+              coupon_id: order.coupon_id,
+              order_id: order.id,
+              user_id: order.user_id ?? null,
+              discount_amount: Number(order.discount_amount || 0),
+            });
+
+          if (redemptionError && redemptionError.code !== "23505") {
+            res.status(500).json({ error: "Failed to redeem coupon" });
+            return;
+          }
+        }
+      }
+
       res.status(200).json({ ok: true });
       return;
     }
@@ -184,6 +209,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       paid_at: new Date().toISOString(),
       subtotal: Number(pending.subtotal || 0),
       shipping_cost: Number(pending.shipping_cost || 0),
+      discount_amount: Number(pending.discount_amount || 0),
+      coupon_id: pending.coupon_id ?? null,
+      coupon_code: pending.coupon_code ?? null,
       total: Number(pending.total || 0),
       total_amount_cents:
         Number(pending.total_amount_cents || 0) ||
@@ -227,6 +255,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }));
 
       await supabase.from("order_items").insert(itemsPayload);
+    }
+
+    if (orderPayload.coupon_id && Number(orderPayload.discount_amount || 0) > 0) {
+      const { error: redemptionError } = await supabase
+        .from("coupon_redemptions")
+        .insert({
+          coupon_id: orderPayload.coupon_id,
+          order_id: pending.id,
+          user_id: pending.user_id ?? null,
+          discount_amount: Number(orderPayload.discount_amount || 0),
+        });
+
+      if (redemptionError && redemptionError.code !== "23505") {
+        res.status(500).json({ error: "Failed to redeem coupon" });
+        return;
+      }
     }
 
     await supabase

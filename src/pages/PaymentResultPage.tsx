@@ -5,14 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Check, XCircle } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { useCreateOrder } from "@/hooks/useOrders";
-import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
 export default function PaymentResultPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
-  const { items } = useCart();
   const [orderCreated, setOrderCreated] = useState(false);
   const hasSubmitted = useRef(false);
   const hasRedirected = useRef(false);
@@ -34,10 +32,6 @@ export default function PaymentResultPage() {
     if (!isSuccess || hasSubmitted.current) return;
     const pendingRaw = window.localStorage.getItem("drippss_pending_payment");
     if (!pendingRaw) return;
-    if (items.length === 0) {
-      toast.error("Cart is empty. Unable to create the order.");
-      return;
-    }
 
     const transactionId =
       params.get("id") ||
@@ -51,7 +45,15 @@ export default function PaymentResultPage() {
       customerName: string;
       shippingAddress: any;
       billingAddress: any;
+      shippingCost?: number;
+      couponCode?: string | null;
+      items?: Array<{ product_id: string; quantity: number }>;
     };
+
+    if (!pending.items || pending.items.length === 0) {
+      toast.error("Order details are missing. Unable to create the order.");
+      return;
+    }
 
     hasSubmitted.current = true;
 
@@ -66,6 +68,9 @@ export default function PaymentResultPage() {
         transactionId: transactionId ?? null,
         paidAt: new Date().toISOString(),
         orderId: pending.orderId,
+        shippingCost: pending.shippingCost,
+        couponCode: pending.couponCode ?? null,
+        items: pending.items,
       })
       .then((created) => {
         window.localStorage.removeItem("drippss_pending_payment");
@@ -85,7 +90,7 @@ export default function PaymentResultPage() {
         }
         toast.error("Payment succeeded but order creation failed. Please contact support.");
       });
-  }, [isSuccess, items.length, params, createOrder]);
+  }, [isSuccess, params, createOrder]);
 
   useEffect(() => {
     if (!isSuccess || hasRedirected.current) return;

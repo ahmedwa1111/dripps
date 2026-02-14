@@ -71,3 +71,25 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Coupons
+
+The discount coupons feature adds two new tables (`coupons`, `coupon_redemptions`) plus coupon fields on `orders` and `pending_orders`.
+
+### Admin API
+- `GET /api/admin/coupons`
+- `POST /api/admin/coupons`
+- `PUT /api/admin/coupons/:id`
+- `PATCH /api/admin/coupons/:id/toggle`
+- `GET /api/admin/coupons/:id/redemptions`
+- `DELETE /api/admin/coupons/:id` (soft delete)
+
+### Shop API
+- `POST /api/cart/apply-coupon`
+- `POST /api/cart/remove-coupon`
+- `POST /api/orders/create`
+
+### Notes
+- Coupon codes are stored uppercase and cannot contain spaces.
+- Coupon usage is tracked in `coupon_redemptions` and `coupons.used_count` is incremented automatically.
+- Cart/checkout revalidates coupons on cart changes and uses server-side validation for totals.

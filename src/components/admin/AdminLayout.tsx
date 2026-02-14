@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Home,
+  Tag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
+  { href: '/admin/coupons', label: 'Coupons', icon: Tag },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {

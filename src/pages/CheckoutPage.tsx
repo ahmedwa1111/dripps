@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { formatCurrency, getFreeShippingThreshold, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD, MAX_SHIPPING_COST } from '@/lib/utils';
 import type { CartItem } from '@/types';
 import { trackEvent } from '@/lib/analytics';
+import { CouponCodeCard } from '@/components/cart/CouponCodeCard';
 
 function getShippingCost(
   items: CartItem[],
@@ -33,8 +34,8 @@ function getShippingCost(
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, subtotal } = useCart();
-  const { user } = useAuth();
+  const { items, subtotal, discount, appliedCoupon } = useCart();
+  const { user, session } = useAuth();
   const createOrder = useCreateOrder();
 
   const [customerInfo, setCustomerInfo] = useState({
@@ -65,7 +66,7 @@ export default function CheckoutPage() {
     subtotal,
     freeShippingThreshold
   );
-  const total = subtotal + shippingCost;
+  const total = Math.max(0, subtotal + shippingCost - discount);
   const requiresAuthForCard = paymentMethod === 'card' && !user;
 
   useEffect(() => {
@@ -106,6 +107,8 @@ export default function CheckoutPage() {
           customerEmail: customerInfo.email,
           customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
           paymentMethod,
+          shippingCost,
+          couponCode: appliedCoupon?.code ?? null,
         });
 
         if (created) {
@@ -117,14 +120,6 @@ export default function CheckoutPage() {
 
       // Card payment: create pending order on server, then redirect to Paymob.
       const amountCents = Math.round(total * 100);
-      const orderItems = items.map((item) => ({
-        product_id: item.product.id,
-        product_name: item.product.name,
-        product_image: item.product.image_url,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        total_price: item.product.price * item.quantity,
-      }));
       const orderId =
         typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
@@ -147,17 +142,25 @@ export default function CheckoutPage() {
         },
         subtotal,
         shippingCost,
+        discount,
         total,
         totalAmountCents: amountCents,
+        couponCode: appliedCoupon?.code ?? null,
+        items: items.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+        })),
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem('drippss_pending_payment', JSON.stringify(pendingPayload));
 
       const resp = await fetch('/api/paymob/create-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
-          amountCents,
           merchantOrderId: orderId,
           billingData: {
             first_name: customerInfo.firstName || shippingAddress.firstName || 'Customer',
@@ -175,11 +178,11 @@ export default function CheckoutPage() {
             shipping_method: 'NA',
           },
           items: items.map((i) => ({
-            name: i.product.name,
-            amount_cents: String(Math.round(i.product.price * 100)),
-            description: i.product.description || i.product.name,
+            product_id: i.product.id,
             quantity: i.quantity,
           })),
+          shippingCost,
+          couponCode: appliedCoupon?.code ?? null,
           orderPayload: {
             userId: user?.id ?? null,
             customerEmail: customerInfo.email,
@@ -197,13 +200,7 @@ export default function CheckoutPage() {
               lastName: shippingAddress.lastName || customerInfo.lastName,
               country: 'EG',
             },
-            subtotal,
-            shippingCost,
-            total,
-            totalAmountCents: amountCents,
-            orderItems,
           },
-          returnUrl: `${window.location.origin}/payment-result`,
         }),
       });
 
@@ -504,12 +501,20 @@ export default function CheckoutPage() {
                       )}
                     </span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Discount {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span>
+                      <span>-{formatCurrency(discount)}</span>
+                    </div>
+                  )}
                   {shippingIsDoubled && shippingCost > 0 && (
                     <p className="text-xs text-muted-foreground">
                       2× shipping applied (more than {SHIPPING_DOUBLE_ITEMS_THRESHOLD} items)
                     </p>
                   )}
                 </div>
+
+                <CouponCodeCard className="border-t border-border pt-4" />
 
                 <div className="border-t border-border pt-4">
                   <div className="flex justify-between text-lg">
@@ -547,3 +552,4 @@ export default function CheckoutPage() {
     </MainLayout>
   );
 }
+

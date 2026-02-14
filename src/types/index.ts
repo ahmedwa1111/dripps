@@ -2,6 +2,8 @@ export type AppRole = 'admin' | 'manager' | 'customer';
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
+export type CouponType = 'percentage' | 'fixed';
+
 export interface Profile {
   id: string;
   email: string;
@@ -71,6 +73,9 @@ export interface Order {
   total: number;
   subtotal: number;
   shipping_cost: number;
+  discount_amount?: number;
+  coupon_id?: string | null;
+  coupon_code?: string | null;
   shipping_address: Address | null;
   billing_address: Address | null;
   customer_email: string | null;
@@ -110,6 +115,45 @@ export interface CartItem {
   quantity: number;
   size?: string;
   color?: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: CouponType;
+  value: number;
+  min_order_amount: number | null;
+  max_discount_amount: number | null;
+  starts_at: string | null;
+  expires_at: string | null;
+  usage_limit_total: number | null;
+  usage_limit_per_user: number | null;
+  used_count: number;
+  is_active: boolean;
+  apply_to_all: boolean;
+  applicable_product_ids: string[] | null;
+  applicable_category_ids: string[] | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+export interface CouponRedemption {
+  id: string;
+  coupon_id: string;
+  user_id: string | null;
+  order_id: string;
+  discount_amount: number;
+  created_at: string;
+}
+
+export interface AppliedCoupon {
+  id: string;
+  code: string;
+  type: CouponType;
+  value: number;
+  discount_amount: number;
+  eligible_subtotal: number;
 }
 
 export interface DashboardStats {

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
+import { CouponCodeCard } from '@/components/cart/CouponCodeCard';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { formatCurrency, getFreeShippingThreshold, SHIPPING_COST, SHIPPING_DOUBLE_ITEMS_THRESHOLD, MAX_SHIPPING_COST } from '@/lib/utils';
 import type { CartItem } from '@/types';
@@ -23,14 +24,14 @@ function getShippingCost(
 }
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, itemCount, subtotal } = useCart();
+  const { items, removeItem, updateQuantity, itemCount, subtotal, discount, appliedCoupon } = useCart();
   const freeShippingThreshold = getFreeShippingThreshold();
   const { cost: shippingCost, isDoubled: shippingIsDoubled } = getShippingCost(
     items,
     subtotal,
     freeShippingThreshold
   );
-  const total = subtotal + shippingCost;
+  const total = Math.max(0, subtotal + shippingCost - discount);
 
   if (items.length === 0) {
     return (
@@ -182,6 +183,12 @@ export default function CartPage() {
                     )}
                   </span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span>
+                    <span>-{formatCurrency(discount)}</span>
+                  </div>
+                )}
                 {shippingIsDoubled && shippingCost > 0 && (
                   <p className="text-xs text-muted-foreground">
                     2x shipping applied (more than {SHIPPING_DOUBLE_ITEMS_THRESHOLD} items)
@@ -193,6 +200,8 @@ export default function CartPage() {
                   </p>
                 )}
               </div>
+
+              <CouponCodeCard className="border-t border-gray-200 pt-4" />
 
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex justify-between text-lg">

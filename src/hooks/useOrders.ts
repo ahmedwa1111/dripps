@@ -95,7 +95,7 @@ export function useUserOrders() {
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { items, clearCart } = useCart();
 
   return useMutation({
@@ -110,70 +110,60 @@ export function useCreateOrder() {
       transactionId?: string | null;
       paidAt?: string | null;
       orderId?: string;
+      shippingCost?: number;
+      couponCode?: string | null;
+      items?: Array<{ product_id: string; quantity: number }>;
     }) => {
-      const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-      const freeShippingThreshold = getFreeShippingThreshold();
-      const baseShipping = items.reduce(
-        (sum, item) => sum + item.quantity * (item.product.shipping_price ?? SHIPPING_COST),
-        0
-      );
-      const isDoubled = itemCount > SHIPPING_DOUBLE_ITEMS_THRESHOLD;
-      const computed = isDoubled ? baseShipping * 2 : baseShipping;
-      const shippingCost =
-        subtotal >= freeShippingThreshold ? 0 : Math.min(computed, MAX_SHIPPING_COST);
-      const total = subtotal + shippingCost;
-      const totalAmountCents = Math.round(total * 100);
+      const payloadItems =
+        orderData.items ??
+        items.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+        }));
 
-      // Create order
-      const paymentMethod = orderData.paymentMethod ?? "card";
-      const paymentStatus = orderData.paymentStatus ?? "unpaid";
-      const paidAt =
-        orderData.paidAt ??
-        (paymentStatus === "paid" ? new Date().toISOString() : null);
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          id: orderData.orderId,
-          user_id: user?.id ?? null,
-          status: 'pending' as const,
-          payment_method: paymentMethod,
-          payment_status: paymentStatus,
-          transaction_id: orderData.transactionId ?? null,
-          paid_at: paidAt,
-          subtotal,
-          shipping_cost: shippingCost,
-          total,
-          total_amount_cents: totalAmountCents,
-          shipping_address: orderData.shippingAddress as unknown as any,
-          billing_address: (orderData.billingAddress || orderData.shippingAddress) as unknown as any,
-          customer_email: orderData.customerEmail,
-          customer_name: orderData.customerName,
+      const fallbackShippingCost = (() => {
+        if (orderData.shippingCost != null) return orderData.shippingCost;
+        const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+        const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+        const freeShippingThreshold = getFreeShippingThreshold();
+        const baseShipping = items.reduce(
+          (sum, item) => sum + item.quantity * (item.product.shipping_price ?? SHIPPING_COST),
+          0
+        );
+        const isDoubled = itemCount > SHIPPING_DOUBLE_ITEMS_THRESHOLD;
+        const computed = isDoubled ? baseShipping * 2 : baseShipping;
+        return subtotal >= freeShippingThreshold ? 0 : Math.min(computed, MAX_SHIPPING_COST);
+      })();
+
+      const resp = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          orderId: orderData.orderId,
+          customerEmail: orderData.customerEmail,
+          customerName: orderData.customerName,
           notes: orderData.notes ?? null,
-        })
-        .select()
-        .single();
-      
-      if (orderError) throw orderError;
+          shippingAddress: orderData.shippingAddress,
+          billingAddress: orderData.billingAddress || orderData.shippingAddress,
+          paymentMethod: orderData.paymentMethod ?? 'card',
+          paymentStatus: orderData.paymentStatus ?? 'unpaid',
+          transactionId: orderData.transactionId ?? null,
+          paidAt: orderData.paidAt ?? null,
+          shippingCost: fallbackShippingCost,
+          couponCode: orderData.couponCode ?? null,
+          items: payloadItems,
+        }),
+      });
 
-      // Create order items
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        product_id: item.product.id,
-        product_name: item.product.name,
-        product_image: item.product.image_url,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        total_price: item.product.price * item.quantity,
-      }));
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data?.error || 'Failed to create order');
+      }
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-      
-      if (itemsError) throw itemsError;
-
-      return order;
+      return data;
     },
     onSuccess: () => {
       clearCart();
