@@ -86,7 +86,7 @@ function HomeRouteGate() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <HomePage />;
   }
 
   return <HomePage />;

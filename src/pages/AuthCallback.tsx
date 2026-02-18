@@ -34,7 +34,7 @@ export default function AuthCallback() {
       }
 
       if (session?.user) {
-        navigate("/dashboard", { replace: true });
+        navigate("/", { replace: true });
         return;
       }
 

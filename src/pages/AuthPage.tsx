@@ -23,7 +23,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -106,7 +106,7 @@ export default function AuthPage() {
         return;
       }
 
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
       return;
     }
 
@@ -119,7 +119,7 @@ export default function AuthPage() {
       return;
     }
 
-    navigate("/dashboard", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (
