@@ -21,7 +21,7 @@ export default function Dashboard() {
       return;
     }
 
-    navigate("/auth", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (

@@ -10,8 +10,6 @@ import {
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-export type OAuthProvider = "google" | "facebook" | "apple";
-
 interface AuthResult {
   error: string | null;
 }
@@ -26,14 +24,12 @@ interface AuthContextValue {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<SignUpResult>;
   signIn: (email: string, password: string) => Promise<AuthResult>;
-  signInWithMagicLink: (email: string) => Promise<AuthResult>;
-  signInWithOAuth: (provider: OAuthProvider) => Promise<AuthResult>;
-  sendPasswordResetEmail: (email: string) => Promise<AuthResult>;
-  updatePassword: (newPassword: string) => Promise<AuthResult>;
   signOut: () => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const PRODUCTION_REDIRECT_URL = "https://drippss.com";
 
 const getFriendlyAuthError = (error: AuthError | null): string | null => {
   if (!error) {
@@ -59,7 +55,7 @@ const getFriendlyAuthError = (error: AuthError | null): string | null => {
   }
 
   if (message.includes("rate limit") || message.includes("too many requests")) {
-    return "Too many attempts. Please wait a minute and try again.";
+    return "Too many attempts. Please wait and try again.";
   }
 
   if (message.includes("network request failed")) {
@@ -67,17 +63,6 @@ const getFriendlyAuthError = (error: AuthError | null): string | null => {
   }
 
   return error.message;
-};
-
-const getRedirectUrl = (path: string) => `${window.location.origin}${path}`;
-const GOOGLE_PRODUCTION_CALLBACK_URL = "https://drippss.com/auth/callback";
-
-const getOAuthRedirectUrl = (provider: OAuthProvider) => {
-  if (provider === "google") {
-    return GOOGLE_PRODUCTION_CALLBACK_URL;
-  }
-
-  return getRedirectUrl("/auth/callback");
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -102,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data, error }) => {
         if (error) {
-          console.error("Unable to load auth session", error.message);
           setAuthState(null);
           return;
         }
@@ -128,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: getRedirectUrl("/auth/callback"),
+        emailRedirectTo: PRODUCTION_REDIRECT_URL,
       },
     });
 
@@ -147,42 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: getFriendlyAuthError(error) };
   }, []);
 
-  const signInWithMagicLink = useCallback(async (email: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: getRedirectUrl("/auth/callback"),
-      },
-    });
-
-    return { error: getFriendlyAuthError(error) };
-  }, []);
-
-  const signInWithOAuth = useCallback(async (provider: OAuthProvider): Promise<AuthResult> => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: getOAuthRedirectUrl(provider),
-      },
-    });
-
-    return { error: getFriendlyAuthError(error) };
-  }, []);
-
-  const sendPasswordResetEmail = useCallback(async (email: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: getRedirectUrl("/auth?mode=reset"),
-    });
-
-    return { error: getFriendlyAuthError(error) };
-  }, []);
-
-  const updatePassword = useCallback(async (newPassword: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    return { error: getFriendlyAuthError(error) };
-  }, []);
-
   const signOut = useCallback(async (): Promise<AuthResult> => {
     const { error } = await supabase.auth.signOut();
     return { error: getFriendlyAuthError(error) };
@@ -195,24 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       signUp,
       signIn,
-      signInWithMagicLink,
-      signInWithOAuth,
-      sendPasswordResetEmail,
-      updatePassword,
       signOut,
     }),
-    [
-      user,
-      session,
-      loading,
-      signUp,
-      signIn,
-      signInWithMagicLink,
-      signInWithOAuth,
-      sendPasswordResetEmail,
-      updatePassword,
-      signOut,
-    ],
+    [user, session, loading, signUp, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

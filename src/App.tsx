@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnalyticsSessionTracker } from "@/components/AnalyticsSessionTracker";
 import { AuthProvider as SupabaseAuthProvider } from "@/auth/AuthContext";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
+import { supabase } from "@/lib/supabase";
 
 // User pages
 import HomePage from "./pages/HomePage";
@@ -24,7 +26,6 @@ import FavoritesPage from "./pages/FavoritesPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
 import AuthPage from "./pages/AuthPage";
-import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,58 @@ import AdminCouponsPage from "./pages/admin/AdminCouponsPage";
 import AdminCouponDetailsPage from "./pages/admin/AdminCouponDetailsPage";
 
 const queryClient = new QueryClient();
+
+function HomeRouteGate() {
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error) {
+          setIsAuthenticated(false);
+          setCheckingSession(false);
+          return;
+        }
+
+        setIsAuthenticated(Boolean(data.session?.user));
+        setCheckingSession(false);
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        setIsAuthenticated(false);
+        setCheckingSession(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <p className="text-sm text-slate-600">Loading...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <HomePage />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -53,7 +106,7 @@ const App = () => (
                 <ScrollToTop />
                 <Routes>
                   {/* User Routes */}
-                  <Route path="/" element={<HomePage />} />
+                  <Route path="/" element={<HomeRouteGate />} />
                   <Route path="/shop" element={<ShopPage />} />
                   <Route path="/product/:slug" element={<ProductPage />} />
                   <Route path="/cart" element={<CartPage />} />
@@ -61,7 +114,6 @@ const App = () => (
                   <Route path="/payment-result" element={<PaymentResultPage />} />
                   <Route path="/login" element={<Navigate to="/auth" replace />} />
                   <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route
                     path="/dashboard"
                     element={
