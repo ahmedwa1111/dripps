@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type SVGProps } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth, type OAuthProvider } from "@/auth/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 type AuthTab = "signin" | "signup";
 type AuthMethod = "password" | "magic_link";
@@ -198,7 +199,17 @@ export default function AuthPage() {
 
     setLoadingAction(action);
 
-    const { error: oauthError } = await signInWithOAuth(provider);
+    const oauthError =
+      provider === "google"
+        ? (
+            await supabase.auth.signInWithOAuth({
+              provider: "google",
+              options: {
+                redirectTo: "https://drippss.com/auth/callback",
+              },
+            })
+          ).error
+        : (await signInWithOAuth(provider)).error;
 
     if (oauthError) {
       setError(oauthError);

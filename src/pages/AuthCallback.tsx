@@ -2,23 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
-const FALLBACK_ERROR = "Could not complete sign-in. Please try again.";
-
-const getMessage = (error: unknown) => {
-  if (error && typeof error === "object" && "message" in error) {
-    const value = (error as { message?: string }).message;
-    if (value) {
-      return value;
-    }
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  return FALLBACK_ERROR;
-};
-
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState("Completing sign-in...");
@@ -29,11 +12,6 @@ export default function AuthCallback() {
     const finalizeAuth = async () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
-      const providerError = params.get("error_description") || params.get("error");
-
-      if (providerError) {
-        throw new Error(providerError);
-      }
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -60,19 +38,16 @@ export default function AuthCallback() {
         return;
       }
 
-      navigate(`/auth?error=${encodeURIComponent(FALLBACK_ERROR)}`, { replace: true });
+      navigate("/", { replace: true });
     };
 
-    finalizeAuth().catch((error) => {
+    finalizeAuth().catch(() => {
       if (!isMounted) {
         return;
       }
 
-      const message = getMessage(error);
-      setStatus(message);
-      window.setTimeout(() => {
-        navigate(`/auth?error=${encodeURIComponent(message)}`, { replace: true });
-      }, 1200);
+      setStatus("Unable to complete sign-in. Redirecting...");
+      window.setTimeout(() => navigate("/", { replace: true }), 900);
     });
 
     return () => {

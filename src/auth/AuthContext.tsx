@@ -70,6 +70,15 @@ const getFriendlyAuthError = (error: AuthError | null): string | null => {
 };
 
 const getRedirectUrl = (path: string) => `${window.location.origin}${path}`;
+const GOOGLE_PRODUCTION_CALLBACK_URL = "https://drippss.com/auth/callback";
+
+const getOAuthRedirectUrl = (provider: OAuthProvider) => {
+  if (provider === "google") {
+    return GOOGLE_PRODUCTION_CALLBACK_URL;
+  }
+
+  return getRedirectUrl("/auth/callback");
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -154,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: getRedirectUrl("/auth/callback"),
+        redirectTo: getOAuthRedirectUrl(provider),
       },
     });
 
