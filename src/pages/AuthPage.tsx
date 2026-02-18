@@ -64,7 +64,7 @@ export default function AuthPage() {
     clearMessages();
     setLoadingAction("google");
 
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: "https://drippss.com",
@@ -77,7 +77,12 @@ export default function AuthPage() {
       return;
     }
 
-    setInfo("Redirecting to Google...");
+    if (data?.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    window.location.href = "/";
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

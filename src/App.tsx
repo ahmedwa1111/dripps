@@ -112,8 +112,9 @@ const App = () => (
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/payment-result" element={<PaymentResultPage />} />
-                  <Route path="/login" element={<Navigate to="/auth" replace />} />
-                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/login" element={<AuthPage />} />
+                  <Route path="/auth" element={<Navigate to="/login" replace />} />
+                  <Route path="/auth/callback" element={<Navigate to="/" replace />} />
                   <Route
                     path="/dashboard"
                     element={
@@ -122,8 +123,22 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/orders" element={<OrdersPage />} />
-                  <Route path="/order/:id" element={<OrderInvoicePage />} />
+                  <Route
+                    path="/orders"
+                    element={
+                      <ProtectedRoute>
+                        <OrdersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/order/:id"
+                    element={
+                      <ProtectedRoute>
+                        <OrderInvoicePage />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="/favorites" element={<FavoritesPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
